@@ -216,7 +216,7 @@ def get_unique_symbols(list_symbols: List[Dict[str, Any]]) -> List[str]:
     try:
         symbols = set()
         for symbol_ in list_symbols:
-            symbols.add(symbol_["symbol"])
+            symbols.add(symbol_.get("symbol", None))
         return list(symbols)
     except Exception as e:
         logger.error(f"Error extracting unique symbols: {e}")
