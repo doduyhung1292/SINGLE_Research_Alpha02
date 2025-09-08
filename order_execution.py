@@ -9,7 +9,7 @@ from datetime import datetime
 
 # Import BatchOrder from trading module
 from core.api.exchange_api import batch_orders
-from models.model_position import update_order_status, save_order_to_db, save_symbol_position_to_db
+from models.model_position import update_order_status, save_order_to_db, save_position_to_db
 from core.notification.notifier import send_telegram_message
 from trading import BatchOrder
 from core.utils.common_utils import convert_numpy_to_python
