@@ -7,7 +7,7 @@ from core.data.market_data_manager import get_latest_price_from_ohlcv
 from server.main import calculate_profit
 
 MONGO_URI = "mongodb://localhost:27017"  # Sửa lại nếu cần
-DB_NAME = "solo_trading"
+DB_NAME = "solo_alpha01"
 EQUITY_COLLECTION = "simulation_equity_curve"
 
 client = pymongo.MongoClient(MONGO_URI)

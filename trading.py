@@ -76,7 +76,7 @@ def process_symbol(
         # Get the most current config values
         current_config = get_config_from_db() or CONFIG
 
-        symbol = symbol["symbol"]
+        symbol = symbol.get("symbol", None)
 
         # Check if this symbol has an open position in the database
         open_position = get_open_order_for_symbol(symbol)
@@ -499,7 +499,7 @@ def process_symbol(
         return close_orders, open_orders, position_data
     except Exception as e:
         logger.error(
-            f"Error processing symbol {symbol_info.get('symbol', 'unknown')}: {e}"
+            f"Error processing symbol {symbol.get('symbol', 'unknown')}: {e}"
         )
         logger.error(traceback.format_exc())
         return [], [], None
