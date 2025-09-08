@@ -14,6 +14,7 @@ DEFAULT_CONFIG = {
     "risk_parity_lookback": 100,  # Number of recent spread returns to use for risk parity calculation
     "risk_parity_adjustment": 0.0,  # Adjustment percentage for risk parity weights (0.05 = 5%)
     "is_active": True,  # Whether the bot is active (allowed to open new positions)
+    "max_loss_pct": 1.0
 }
 
 # Default trading symbols for initialization
