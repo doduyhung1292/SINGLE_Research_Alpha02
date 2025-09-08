@@ -1,0 +1,7 @@
+1. LOG(CloseA) - LOG(CloseB)
+2. -1*((CloseA-SMA(CloseA,50))/SMA(CloseA,50) - (CloseB-SMA(CloseB,50))/SMA(CloseB,50))
+3. (Close-DELAY(Close,20))/DELAY(Close,20) - (Close-DELAY(Close,20))/DELAY(Close,20)
+4. OpenA/CloseA - OpenB/CloseB
+5. ((HighA + LowA)/2 - CloseA)/CloseA - ((HighB + LowB)/2 - CloseB)/CloseB
+6. CORRELATION(HighA/LowA, VolumeA, 10) - CORRELATION(HighB/LowB, VolumeB, 10)
+7. CORRELATION(VwapA, VolumeA, 10) - CORRELATION(VwapA, VolumeA, 10)

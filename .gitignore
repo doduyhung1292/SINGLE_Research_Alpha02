@@ -1,0 +1,10 @@
+.idea/
+# Ignore Python bytecode files
+*.pyc
+
+# Ignore other files or directories
+__pycache__/
+*.log
+
+# Ignore environment variables file
+.env

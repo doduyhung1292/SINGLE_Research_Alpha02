@@ -1,0 +1,3035 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lambda Management - SOLOALPHA001</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
+    <script>
+        // Register the zoom plugin globally
+        window.ChartZoom = window.ChartZoom || ChartJS.zoom;
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.30.0/index.min.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.1/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/equity_chart.js"></script>
+    <script src="/static/js/performance_functions.js"></script>
+    <!-- Add Highcharts for Symbol Histogram -->
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <style>
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-link {
+            color: #495057;
+        }
+
+        .nav-link.active {
+            font-weight: bold;
+            color: #0d6efd;
+        }
+
+        .config-item {
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .config-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .status-active {
+            color: #198754;
+        }
+
+        .status-inactive {
+            color: #dc3545;
+        }
+
+        .form-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .symbol-card {
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .symbol-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .symbol-header {
+            font-weight: bold;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .profit-positive {
+            color: #28a745;
+        }
+
+        .profit-negative {
+            color: #dc3545;
+        }
+
+        .dashboard-container {
+            padding: 20px 0;
+        }
+
+        .chart-container {
+            height: 400px;
+            margin-bottom: 30px;
+        }
+
+        /* Fix for modal backdrop issues */
+        .modal-open {
+            overflow: auto !important;
+            padding-right: 0 !important;
+        }
+
+        .modal-backdrop.show {
+            opacity: 0.5;
+            z-index: 1040;
+        }
+
+        /* Ensure body returns to normal after modal is closed */
+        body {
+            overflow: auto !important;
+        }
+
+        /* Ensure modals appear above backdrops */
+        .modal {
+            z-index: 1050 !important;
+        }
+
+        /* Add transition for smoother backdrop removal */
+        .modal-backdrop {
+            transition: opacity 0.15s linear;
+        }
+
+        /* Fix modal backdrop for second modal */
+        body.modal-open .modal-backdrop+.modal-backdrop {
+            z-index: 1045;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">Lambda Management</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#dashboard">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#configs">Trading Configs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#positions">Open Positions</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#history">Trade History</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#performance">Performance</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#symbol-histogram">Symbol Frequency</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="tab-content">
+            <!-- Dashboard Tab -->
+            <div class="tab-pane fade show active" id="dashboard">
+                <!-- Bot Status Control -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2>Dashboard</h2>
+                    <div>
+                        <button id="toggle-bot-status" class="btn btn-warning me-2">
+                            <i class="bi bi-power"></i> <span id="bot-status-text">Loading...</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- BTC-Equity Correlation Card -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-3">
+                                <h5>BTC-Equity Correlation</h5>
+                                <p>Correlation between BTC price and portfolio equity <span
+                                        id="correlation-window"></span></p>
+                            </div>
+                            <div class="col-md-2 text-center">
+                                <h2 id="btc-equity-correlation">Loading...</h2>
+                                <p id="correlation-sample-size" class="text-muted small">Based on N data points</p>
+                            </div>
+                            <div class="col-md-2 text-center">
+                                <h6>Long/Short Ratio</h6>
+                                <h3 id="long-short-ratio">Loading...</h3>
+                                <p id="long-short-details" class="text-muted small">L: 0 | S: 0</p>
+                            </div>
+                            <div class="col-md-2 text-center">
+                                <h6>Current Equity</h6>
+                                <h3 id="current-equity">Loading...</h3>
+                            </div>
+                            <div class="col-md-1 text-center">
+                                <h6>Avg. PnL</h6>
+                                <h3 id="avg-daily-pnl">Loading...</h3>
+                            </div>
+                            <div class="col-md-2 text-center">
+                                <h6>Daily Return</h6>
+                                <h3 id="daily-return">Loading...</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Equity Chart -->
+                <h2>Total Equity Performance</h2>
+                <div class="mb-2">
+                    <span style="color:#4bc0c0;font-weight:bold">■</span> Alpha01 (Tài khoản 1)
+                    <span style="color:#ff6384;font-weight:bold">■</span> Alpha02 (Tài khoản 2)
+                    <span style="color:#36a2eb;font-weight:bold">■</span> Total Equity (Tổng 2 tài khoản)
+                </div>
+                <div class="btn-group" role="group" aria-label="Equity Mode Switch">
+                    <button type="button" class="btn btn-outline-primary active" id="btn-live-equity">Live Equity</button>
+                    <button type="button" class="btn btn-outline-secondary" id="btn-sim-equity">Simulation Equity</button>
+                </div>
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div id="equity-chart-container" style="height: 400px;"></div>
+                    </div>
+                </div>
+
+                <!-- Symbol Performance Chart -->
+                <h2>Performance by Symbols</h2>
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div id="symbol-performance-chart-container">
+                            <canvas id="symbol-performance-chart" style="height: 800px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configs Tab -->
+            <div class="tab-pane fade" id="configs">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2>Symbol Trading Configurations</h2>
+                    <div>
+                        <button class="btn btn-danger me-2" id="view-blacklist-btn">
+                            <i class="bi bi-exclamation-triangle"></i> View Blacklist
+                        </button>
+                        <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#botConfigModal">
+                            <i class="bi bi-gear"></i> Bot Settings
+                        </button>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#configModal">
+                            <i class="bi bi-plus"></i> New Symbol Config
+                        </button>
+                    </div>
+                </div>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 text-center">
+                                <h4 id="total-symbols-count">0</h4>
+                                <p>Total Symbols</p>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <h4 id="active-symbols-count">0</h4>
+                                <p>Active Symbols</p>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <h4 id="blacklisted-symbols-count">0</h4>
+                                <p>Blacklisted Symbols</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Symbol</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="symbols-table-body">
+                                    <!-- symbol config items will be loaded here -->
+                                    {% for symbol in data|fromjson %}
+                                    <tr>
+                                        <td>{{ symbol.symbol }}</td>
+                                        <td>{{ 'Active' if symbol.is_active else 'Inactive' }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-primary edit-config" data-id="{{ symbol._id }}">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="btn btn-sm {{ 'btn-warning' if symbol.is_active else 'btn-success' }} toggle-active" data-id="{{ symbol._id }}">
+                                                <i class="bi {{ 'bi-pause-fill' if symbol.is_active else 'bi-play-fill' }}"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-danger delete-config" data-id="{{ symbol._id }}">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Open Positions Tab -->
+            <div class="tab-pane fade" id="positions">
+                <h2>Open Positions</h2>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Symbol</th>
+                                        <th>Side</th>
+                                        <th>Quantity</th>
+                                        <th>Entry Price</th>
+                                        <th>Status</th>
+                                        <th>Entry Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="open-positions-table-body">
+                                    <!-- Open positions will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trade History Tab -->
+            <div class="tab-pane fade" id="history">
+                <h2>Trade History</h2>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 text-center">
+                                <h4 id="closed-trades">0</h4>
+                                <p>Closed Trades</p>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <h4 id="average-pnl">0.00</h4>
+                                <p>Average PnL</p>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <h4 id="average-percent">$0.00</h4> <!-- Initial value updated slightly -->
+                                <p>Average Notional</p>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <div class="btn-group">
+                                    <button class="btn btn-outline-primary" id="sort-by-time">Sort by Time</button>
+                                    <button class="btn btn-outline-primary" id="sort-by-pnl">Sort by PnL</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <form id="history-filter-form" class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Symbol</label>
+                                <input type="text" class="form-control" id="filter-symbol">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">From Date</label>
+                                <input type="date" class="form-control" id="filter-from-date">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">To Date</label>
+                                <input type="date" class="form-control" id="filter-to-date">
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end gap-2">
+                                <button type="submit" class="btn btn-primary">Filter</button>
+                                <button type="button" id="test-api-btn" class="btn btn-outline-secondary">Test
+                                    API</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Symbol</th>
+                                        <th>Side</th>
+                                        <th>Close Time</th>
+                                        <th>Entry Price</th>
+                                        <th>Close Price</th>
+                                        <th>PnL</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="trade-history-table-body">
+                                    <!-- Trade history will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Tab -->
+            <div class="tab-pane fade" id="performance">
+                <h2>Performance Analysis</h2>
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Overall Performance</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-md-3">
+                                        <div class="card bg-light">
+                                            <div class="card-body">
+                                                <h6 class="card-title">Total Return (All Symbols)</h6>
+                                                <h4 id="total-all-symbols-return">0.00</h4>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card bg-light">
+                                            <div class="card-body">
+                                                <h6 class="card-title">Average Return (All Symbols)</h6>
+                                                <h4 id="avg-all-symbols-return">0.00</h4>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card bg-light">
+                                            <div class="card-body">
+                                                <h6 class="card-title">Average Sharpe Ratio</h6>
+                                                <h4 id="avg-all-symbols-sharpe">0.00</h4>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card bg-light">
+                                            <div class="card-body">
+                                                <h6 class="card-title">Overall Win Rate</h6>
+                                                <h4 id="overall-win-rate">0.00%</h4>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5>Symbol Performance Metrics</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Symbol</th>
+                                                <th>Trades</th>
+                                                <th>Win Rate</th>
+                                                <th>Avg Return</th>
+                                                <th>Total Return</th>
+                                                <th>Sharpe Ratio</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="symbol-performance-table">
+                                            <!-- symbol performance data will be loaded here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Symbol Histogram Tab -->
+            <div class="tab-pane fade" id="symbol-histogram">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2>Symbol Frequency in Trading Symbols</h2>
+                    <div class="btn-group">
+                        <button id="toggleView" class="btn btn-outline-primary">Toggle View</button>
+                        <button id="sortByName" class="btn btn-outline-secondary">Sort by Name</button>
+                        <button id="sortByFrequency" class="btn btn-outline-secondary">Sort by Frequency</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                Symbol Usage Frequency Histogram
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex gap-2">
+                                    <input type="text" id="symbolSearch" class="form-control"
+                                        placeholder="Search symbols...">
+                                    <select id="symbolLimit" class="form-select" style="width: auto;">
+                                        <option value="20">Top 20</option>
+                                        <option value="50" selected>Top 50</option>
+                                        <option value="100">Top 100</option>
+                                        <option value="0">All Symbols</option>
+                                    </select>
+                                    <div class="form-check ms-2">
+                                        <input class="form-check-input" type="checkbox" id="groupOthers" checked>
+                                        <label class="form-check-label" for="groupOthers">Group Others</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="frequencyChart" style="width: 100%; height: 700px;"></div>
+                        <div id="paginationControls" class="d-flex justify-content-center mt-3" style="display: none;">
+                            <button id="prevPage" class="btn btn-sm btn-outline-secondary me-2">&laquo;
+                                Previous</button>
+                            <span id="pageInfo" class="align-self-center mx-2">Page 1 of 1</span>
+                            <button id="nextPage" class="btn btn-sm btn-outline-secondary ms-2">Next &raquo;</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Config Modal -->
+    <div class="modal fade" id="configModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="configModalTitle">New Symbol Configuration</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="config-form">
+                        <input type="hidden" id="config-id">
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Symbol</label>
+                                <input type="text" class="form-control" id="symbol" required>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Timeframe</label>
+                                <select class="form-select" id="timeframe">
+                                    <option value="1m">1 minute</option>
+                                    <option value="5m" >5 minutes</option>
+                                    <option value="15m" >15 minutes</option>
+                                    <option value="30m">30 minutes</option>
+                                    <option value="1h">1 hour</option>
+                                    <option value="4h" selected>4 hours</option>
+                                    <option value="1d">1 day</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="is_active" checked>
+                            <label class="form-check-label">Activate Trading</label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="save-config">Save Configuration</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Bot Configuration parameters -->
+    <div class="modal fade" id="botConfigModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Bot Configuration</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="bot-config-form">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Window</label>
+                                <input type="number" class="form-control" id="window" min="1" value="500">
+                                <small class="form-text text-muted">Bollinger Band window period</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">BB Entry Multiplier</label>
+                                <input type="number" class="form-control" id="bb_entry_multiplier" min="0.1" step="0.1"
+                                    value="2.0">
+                                <small class="form-text text-muted">Multiplier for entry Bollinger Bands</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">BB Stop Multiplier</label>
+                                <input type="number" class="form-control" id="bb_stop_multiplier" min="0.1" step="0.1"
+                                    value="4.0">
+                                <small class="form-text text-muted">Multiplier for stop loss Bollinger Bands</small>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Timeframe</label>
+                                <select class="form-select" id="bot_timeframe">
+                                    <option value="1m">1 minute</option>
+                                    <option value="5m" selected>5 minutes</option>
+                                    <option value="15m">15 minutes</option>
+                                    <option value="30m">30 minutes</option>
+                                    <option value="1h">1 hour</option>
+                                    <option value="4h">4 hours</option>
+                                    <option value="1d">1 day</option>
+                                </select>
+                                <small class="form-text text-muted">Default timeframe</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Candles Limit</label>
+                                <input type="number" class="form-control" id="limit" min="100" step="100" value="1000">
+                                <small class="form-text text-muted">Number of candles to fetch</small>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Position Size %</label>
+                                <input type="number" class="form-control" id="position_size_pct" min="0.001" max="1"
+                                    step="0.001" value="0.01">
+                                <small class="form-text text-muted">Position size as percentage of equity</small>
+                            </div>
+                          
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Max Concurrent Positions</label>
+                                <input type="number" class="form-control" id="max_concurrent_positions" min="1"
+                                    value="2">
+                                <small class="form-text text-muted">Maximum number of concurrent positions</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Max Retry Attempts</label>
+                                <input type="number" class="form-control" id="max_retry_attempts" min="1" value="3">
+                                <small class="form-text text-muted">Maximum API retry attempts</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Retry Delay</label>
+                                <input type="number" class="form-control" id="retry_delay" min="1" value="2">
+                                <small class="form-text text-muted">Delay between retries in seconds</small>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Symbol Info Refresh Hours</label>
+                                <input type="number" class="form-control" id="symbol_info_refresh_hours" min="1"
+                                    value="24">
+                                <small class="form-text text-muted">Hours before refreshing symbol info</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Cooloff Bars</label>
+                                <input type="number" class="form-control" id="cooloff_bars" min="1" value="300">
+                                <small class="form-text text-muted">Number of bars for symbol cool-off period</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Cooloff Check Interval</label>
+                                <input type="number" class="form-control" id="cooloff_check_interval" min="1"
+                                    value="50">
+                                <small class="form-text text-muted">Number of bars between check intervals</small>
+                            </div>
+                        </div>
+                        <!-- THÊM HÀNG MỚI CHO CÁC THAM SỐ RISK PARITY VÀ STOP LOSS -->
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Risk Parity Lookback</label>
+                                <input type="number" class="form-control" id="risk_parity_lookback" min="10" step="1"
+                                    value="100">
+                                <small class="form-text text-muted">Number of returns for risk parity
+                                    calculation</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Risk Parity Adjustment</label>
+                                <input type="number" class="form-control" id="risk_parity_adjustment" min="0" max="1" step="0.01"
+                                    value="0.05">
+                                <small class="form-text text-muted">Adjustment % for risk parity weights</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Max Loss Percent</label>
+                                <input type="number" class="form-control" id="max_loss_pct" min="0.1" step="0.1"
+                                    value="5.0">
+                                <small class="form-text text-muted">Max loss as % of equity before closing
+                                    position</small>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Blacklist Days</label>
+                                <input type="number" class="form-control" id="blacklist_days" min="1" step="1"
+                                    value="5">
+                                <small class="form-text text-muted">Days to blacklist a symbol after max loss
+                                    trigger</small>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="save-bot-config">Save Configuration</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Blacklist Modal -->
+    <div class="modal fade" id="blacklistModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Blacklisted Symbols</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Symbols are blacklisted when they trigger stop loss due to exceeding maximum loss percentage.
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Blacklisted On</th>
+                                    <th>Expires On</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="blacklist-table-body">
+                                <!-- Blacklisted symbols will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Thêm hàm chuyển tab thủ công
+        function activateTab(tabId) {
+            // Loại bỏ active class từ tất cả các tab
+            document.querySelectorAll('.nav-link').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Loại bỏ active class từ tất cả các tab content
+            document.querySelectorAll('.tab-pane').forEach(content => {
+                content.classList.remove('show', 'active');
+            });
+
+            // Thêm active class vào tab được chọn
+            document.querySelector(`a[href="#${tabId}"]`).classList.add('active');
+
+            // Thêm show và active class vào nội dung tab được chọn
+            document.getElementById(tabId).classList.add('show', 'active');
+
+            // Load dữ liệu tương ứng khi tab được kích hoạt
+            if (tabId === 'positions') {
+                loadOpenPositions();
+            } else if (tabId === 'history') {
+                loadTradeHistory();
+            } else if (tabId === 'performance') {
+                loadPerformanceStats();
+            } else if (tabId === 'configs') {
+                loadConfigs();
+            }
+        }
+
+        // Thay thế cách xử lý tab clicks
+        document.addEventListener('DOMContentLoaded', function () {
+            // Xóa đoạn code event listener tab.shown.bs và thay bằng click handler
+            document.querySelectorAll('.nav-link').forEach(tab => {
+                tab.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href').substring(1);
+                    activateTab(targetId);
+                });
+            });
+            
+            // Add event listener for View Blacklist button
+            document.getElementById('view-blacklist-btn').addEventListener('click', function() {
+                loadBlacklistedSymbols();
+                const blacklistModal = new bootstrap.Modal(document.getElementById('blacklistModal'));
+                blacklistModal.show();
+            });
+        });
+        
+        // Function to load blacklisted symbols
+        function loadBlacklistedSymbols() {
+            const tableBody = document.getElementById('blacklist-table-body');
+            tableBody.innerHTML = '<tr><td colspan="5" class="text-center">Loading blacklisted symbols...</td></tr>';
+            
+            fetch('/api/blacklisted_symbols')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(blacklistedSymbols => {
+                    if (!blacklistedSymbols || !Array.isArray(blacklistedSymbols) || blacklistedSymbols.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No blacklisted symbols found</td></tr>';
+                        return;
+                    }
+                    
+                    tableBody.innerHTML = '';
+                    
+                    // Sort blacklisted symbols by creation date (newest first)
+                    blacklistedSymbols.sort((a, b) => {
+                        const dateA = new Date(a.created_at || 0);
+                        const dateB = new Date(b.created_at || 0);
+                        return dateB - dateA;
+                    });
+                    
+                    blacklistedSymbols.forEach(symbol => {
+                        const row = document.createElement('tr');
+                        
+                        // Format dates
+                        const createdDate = symbol.created_at ? new Date(symbol.created_at).toLocaleString() : 'N/A';
+                        const expiryDate = symbol.expires_at ? new Date(symbol.expires_at).toLocaleString() : 'N/A';
+                        
+                        row.innerHTML = `
+                            <td>${symbol.symbol || 'N/A'}</td>
+                            <td>${createdDate}</td>
+                            <td>${expiryDate}</td>
+                            <td>
+                                <button class="btn btn-sm btn-warning remove-from-blacklist" data-id="${symbol._id}">
+                                    <i class="bi bi-trash"></i> Remove
+                                </button>
+                            </td>
+                        `;
+                        
+                        tableBody.appendChild(row);
+                    });
+                    
+                    // Add event listeners for remove buttons
+                    document.querySelectorAll('.remove-from-blacklist').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const symbolId = this.getAttribute('data-id');
+                            removeFromBlacklist(symbolId, this);
+                        });
+                    });
+                })
+                .catch(error => {
+                    console.error("Error loading blacklisted symbols:", error);
+                    tableBody.innerHTML = `<tr><td colspan="5" class="text-danger">Error: ${error.message}</td></tr>`;
+                });
+        }
+        
+        // Function to remove a symbol from the blacklist
+        function removeFromBlacklist(symbolId, buttonElement) {
+            if (confirm('Are you sure you want to remove this symbol from the blacklist?')) {
+                // Disable the button and show loading state
+                buttonElement.disabled = true;
+                buttonElement.innerHTML = '<i class="bi bi-hourglass"></i> Removing...';
+                
+                fetch(`/api/blacklisted_symbols/${symbolId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(result => {
+                    if (result.success) {
+                        // Remove the row from the table
+                        buttonElement.closest('tr').remove();
+                        
+                        // Check if table is now empty
+                        const tableBody = document.getElementById('blacklist-table-body');
+                        if (tableBody.children.length === 0) {
+                            tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No blacklisted symbols found</td></tr>';
+                        }
+                        
+                        // Reload configs to update the blacklisted count
+                        loadConfigs();
+                    } else {
+                        alert(result.message || 'Failed to remove symbol from blacklist');
+                        // Reset button state
+                        buttonElement.disabled = false;
+                        buttonElement.innerHTML = '<i class="bi bi-trash"></i> Remove';
+                    }
+                })
+                .catch(error => {
+                    console.error("Error removing symbol from blacklist:", error);
+                    alert(`Error: ${error.message}`);
+                    // Reset button state
+                    buttonElement.disabled = false;
+                    buttonElement.innerHTML = '<i class="bi bi-trash"></i> Remove';
+                });
+            }
+        }
+
+        // Fix the loadPerformanceStats function to use the correct API endpoint
+        function loadPerformanceStats() {
+            console.log("Loading performance stats from /api/symbol_performance");
+        }
+
+        // System Overview
+        function loadSystemSnapshot() {
+            fetch('/api/system_snapshot')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('account-balance').textContent = parseFloat(data.account_balance).toFixed(2);
+                    document.getElementById('active-configs').textContent = data.active_configs;
+                    document.getElementById('open-orders').textContent = data.open_orders;
+                    document.getElementById('symbol-count').textContent = data.symbol_count;
+                    document.getElementById('closed-orders').textContent = data.closed_orders;
+
+                    const updateTime = new Date(data.last_updated);
+                    document.getElementById('last-updated').textContent = 'Last updated: ' + updateTime.toLocaleString();
+                })
+                .catch(error => console.error('Error loading system snapshot:', error));
+        }
+
+        // Default Configuration
+        function loadDefaultConfig() {
+            fetch('/api/configs')
+                .then(response => response.json())
+                .then(configs => {
+                    const defaultConfig = configs.find(config => config.is_default);
+                    if (defaultConfig) {
+                        document.getElementById('default-order-size').value = defaultConfig.order_size_percent;
+                        document.getElementById('default-leverage').value = defaultConfig.leverage;
+                        document.getElementById('default-z-open-long').value = defaultConfig.z_open_long;
+                        document.getElementById('default-z-open-short').value = defaultConfig.z_open_short;
+                    }
+                })
+                .catch(error => console.error('Error loading default config:', error));
+        }
+
+        function saveDefaultConfig() {
+            const data = {
+                order_size_percent: parseFloat(document.getElementById('default-order-size').value),
+                leverage: parseFloat(document.getElementById('default-leverage').value),
+                z_open_long: parseFloat(document.getElementById('default-z-open-long').value),
+                z_open_short: parseFloat(document.getElementById('default-z-open-short').value),
+                is_default: true
+            };
+
+            fetch('/api/default_config', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(result => {
+                    alert(result.message || 'Default configuration saved');
+                })
+                .catch(error => {
+                    console.error('Error saving default config:', error);
+                    alert('Failed to save configuration');
+                });
+        }
+
+        // Trading Configurations
+        function loadConfigs() {
+            // Attempt to load blacklisted symbols first
+            fetch('/api/blacklisted_symbols')
+                .then(response => {
+                    // If the endpoint doesn't exist, just proceed with an empty blacklist
+                    if (!response.ok) {
+                        console.warn('Blacklisted symbols endpoint not available:', response.status);
+                        return [];
+                    }
+                    return response.json();
+                })
+                .catch(error => {
+                    console.warn('Error fetching blacklisted symbols:', error);
+                    return []; // Return empty array on error
+                })
+                .then(blacklist => {
+                    // Save blacklist in a global variable for reference
+                    window.blacklistedSymbols = blacklist || [];
+
+                    // Update blacklisted symbols count
+                    document.getElementById('blacklisted-symbols-count').textContent = window.blacklistedSymbols.length;
+
+                    // Create a Set of blacklisted symbol identifiers for efficient lookup
+                    const blacklistSet = new Set();
+                    window.blacklistedSymbols.forEach(item => {
+                        blacklistSet.add(`${item.symbol}`);
+                    });
+
+                    // Now load the configs
+                    return fetch('/api/configs');
+                })
+                .then(response => response.json())
+                .then(configs => {
+                    const tableBody = document.getElementById('symbols-table-body');
+                    tableBody.innerHTML = '';
+
+                    // Filter out default configs
+                    const symbolConfigs = configs.filter(config => !config.is_default);
+
+                    // Update counts
+                    document.getElementById('total-symbols-count').textContent = symbolConfigs.length;
+                    document.getElementById('active-symbols-count').textContent =
+                        symbolConfigs.filter(config => config.is_active).length;
+
+                    // Create a Set of blacklisted symbol identifiers for efficient lookup
+                    const blacklistSet = new Set();
+                    if (window.blacklistedSymbols) {
+                        window.blacklistedSymbols.forEach(item => {
+                            blacklistSet.add(`${item.symbolA}:${item.symbolB}`);
+                            blacklistSet.add(`${item.symbolB}:${item.symbolA}`); // Also add reverse symbol
+                        });
+                    }
+
+                    symbolConfigs.forEach(config => {
+                        const row = document.createElement('tr');
+                        row.classList.add('config-item');
+                        row.setAttribute('data-id', config._id);
+
+                        // Check if this symbol is blacklisted
+                        const symbolIdentifier = `${config.symbolA}:${config.symbolB}`;
+                        const isBlacklisted = blacklistSet.has(symbolIdentifier);
+
+                        // Add blacklisted class if needed
+                        if (isBlacklisted) {
+                            row.classList.add('blacklisted-symbol');
+                            row.style.backgroundColor = 'rgba(220, 53, 69, 0.1)'; // Light red background
+                        }
+
+                        row.innerHTML = `
+                            <td>${config.symbol || 'All'}</td>
+                            <td>
+                                <span class="${config.is_active ? 'status-active' : 'status-inactive'}">
+                                    ${config.is_active ? 'Active' : 'Inactive'}
+                                </span>
+                                ${isBlacklisted ? '<span class="badge bg-danger ms-2">Blacklisted</span>' : ''}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-primary edit-config" data-id="${config._id}">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm ${config.is_active ? 'btn-warning' : 'btn-success'} toggle-active" data-id="${config._id}">
+                                    <i class="bi ${config.is_active ? 'bi-pause-fill' : 'bi-play-fill'}"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger delete-config" data-id="${config._id}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+
+                    // Add event listeners for edit, toggle, delete buttons
+                    document.querySelectorAll('.edit-config').forEach(btn => {
+                        btn.addEventListener('click', function () {
+                            const configId = this.getAttribute('data-id');
+                            editConfig(configId);
+                        });
+                    });
+
+                    document.querySelectorAll('.toggle-active').forEach(btn => {
+                        btn.addEventListener('click', function () {
+                            const configId = this.getAttribute('data-id');
+                            toggleActiveConfig(configId);
+                        });
+                    });
+
+                    document.querySelectorAll('.delete-config').forEach(btn => {
+                        btn.addEventListener('click', function () {
+                            const configId = this.getAttribute('data-id');
+                            deleteConfig(configId);
+                        });
+                    });
+                })
+                .catch(error => console.error('Error loading configs:', error));
+        }
+
+        function editConfig(configId) {
+            fetch(`/api/config/${configId}`)
+                .then(response => response.json())
+                .then(config => {
+                    document.getElementById('config-id').value = config._id;
+                    document.getElementById('config-symbol').value = config.symbolA || '';
+                    document.getElementById('config-alpha').value = config.alpha || '';
+                    document.getElementById('config-order-size').value = config.order_size_percent;
+                    document.getElementById('config-leverage').value = config.leverage;
+                    document.getElementById('config-z-open-long').value = config.z_open_long;
+                    document.getElementById('config-z-open-short').value = config.z_open_short;
+                    document.getElementById('config-is-active').checked = config.is_active;
+
+                    const configModal = new bootstrap.Modal(document.getElementById('configModal'));
+                    configModal.show();
+                })
+                .catch(error => console.error('Error loading config details:', error));
+        }
+
+        function saveConfig() {
+            const configId = $('#config-id').val();
+            const isNewConfig = !configId;
+
+            const data = {
+                symbolA: $('#symbol').val(),
+                timeframe: $('#timeframe').val(),         
+                is_active: $('#is_active').prop('checked'),
+            };
+
+            console.log("Saving symbol config:", data);
+
+            let url = '/api/config';
+            let method = 'POST';
+
+            if (!isNewConfig) {
+                url = `/api/config/${configId}`;
+                method = 'PUT';
+            }
+
+            $.ajax({
+                url: url,
+                type: method,
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function (result) {
+                    console.log("Save success:", result);
+                    // Close modal
+                    $('#configModal').modal('hide');
+
+                    // Reset form
+                    $('#config-form')[0].reset();
+                    $('#config-id').val('');
+
+                    // Reload configs
+                    loadConfigs();
+
+                    // Show success message
+                    alert(result.message || 'Configuration saved successfully');
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error saving config:', error);
+                    console.error('Response:', xhr.responseText);
+                    alert('Failed to save configuration: ' + error);
+                }
+            });
+        }
+
+        // Thêm event listener khi modal đóng để dọn dẹp modal backdrop
+        document.addEventListener('DOMContentLoaded', function () {
+            const configModal = document.getElementById('configModal');
+            configModal.addEventListener('hidden.bs.modal', function () {
+                // Xóa modal backdrop thủ công nếu cần
+                const modalBackdrops = document.getElementsByClassName('modal-backdrop');
+                if (modalBackdrops.length > 0) {
+                    for (let i = 0; i < modalBackdrops.length; i++) {
+                        modalBackdrops[i].parentNode.removeChild(modalBackdrops[i]);
+                    }
+                }
+
+                // Xóa class modal-open khỏi body
+                document.body.classList.remove('modal-open');
+            });
+        });
+
+        function toggleActiveConfig(configId) {
+            fetch(`/api/toggle_active/${configId}`, {
+                method: 'POST'
+            })
+                .then(response => response.json())
+                .then(result => {
+                    loadConfigs();
+                    alert(result.message || 'Status updated');
+                })
+                .catch(error => {
+                    console.error('Error toggling status:', error);
+                    alert('Failed to update status');
+                });
+        }
+
+        function deleteConfig(configId) {
+            if (confirm('Are you sure you want to delete this configuration?')) {
+                fetch(`/api/config/${configId}`, {
+                    method: 'DELETE'
+                })
+                    .then(response => response.json())
+                    .then(result => {
+                        loadConfigs();
+                        alert(result.message || 'Configuration deleted');
+                    })
+                    .catch(error => {
+                        console.error('Error deleting config:', error);
+                        alert('Failed to delete configuration');
+                    });
+            }
+        }
+
+        // Hàm cập nhật cấu hình bot
+        function saveBotConfig() {
+            // Tạo object dữ liệu từ form
+            const data = {
+                window: parseInt($('#window').val()),
+                bb_entry_multiplier: parseFloat($('#bb_entry_multiplier').val()),
+                bb_stop_multiplier: parseFloat($('#bb_stop_multiplier').val()),
+                timeframe: $('#bot_timeframe').val(),
+                limit: parseInt($('#limit').val()),
+                position_size_pct: parseFloat($('#position_size_pct').val()),
+                max_concurrent_positions: parseInt($('#max_concurrent_positions').val()),
+                max_retry_attempts: parseInt($('#max_retry_attempts').val()),
+                retry_delay: parseInt($('#retry_delay').val()),
+                symbol_info_refresh_hours: parseInt($('#symbol_info_refresh_hours').val()),
+                blacklist_days: parseFloat($('#blacklist_days').val()),
+                max_loss_pct: parseFloat($('#max_loss_pct').val()),
+                risk_parity_lookback: parseFloat($('#risk_parity_lookback').val()),
+                risk_parity_adjustment: parseFloat($('#risk_parity_adjustment').val()),
+                window: parseInt($('#window').val()),
+            };
+
+            // Important: Chúng ta không thêm ID vào request - server sẽ tự tìm và cập nhật bản ghi hiện có
+            console.log("Saving bot config:", data);
+
+            $.ajax({
+                url: '/api/bot_config',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function (response) {
+                    console.log("Bot config save response:", response);
+
+                    // Đóng modal
+                    $('#botConfigModal').modal('hide');
+
+                    // Dọn dẹp modal backdrop
+                    cleanupModalBackdrops();
+
+                    // Thông báo thành công
+                    alert('Cấu hình bot đã được cập nhật thành công');
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error saving bot config:', error);
+                    console.error('Response:', xhr.responseText);
+                    alert('Lỗi khi cập nhật cấu hình bot: ' + error);
+                }
+            });
+        }
+
+        // Function to load bot configuration
+        function loadBotConfig() {
+            $.ajax({
+                url: '/api/bot_config',
+                method: 'GET',
+                success: function (data) {
+                    console.log("Received bot config:", data);
+
+                    if (data && !data.error) {
+                        // Lưu ID hiện tại (nếu có) vào một thuộc tính ẩn của modal
+                        if (data._id) {
+                            $('#botConfigModal').data('config-id', data._id);
+                            console.log("Stored config ID:", data._id);
+                        }
+
+                        // Fill in all the bot config fields
+                        $('#window').val(data.window || 500);
+                        $('#bb_entry_multiplier').val(data.bb_entry_multiplier || 2.0);
+                        $('#bb_stop_multiplier').val(data.bb_stop_multiplier || 4.0);
+                        $('#bot_timeframe').val(data.timeframe || '5m');
+                        $('#limit').val(data.limit || 1000);
+                        $('#max_concurrent_positions').val(data.max_concurrent_positions || 2);
+                        $('#max_retry_attempts').val(data.max_retry_attempts || 3);
+                        $('#retry_delay').val(data.retry_delay || 2);
+                        $('#symbol_info_refresh_hours').val(data.symbol_info_refresh_hours || 24);
+
+                        $('#blacklist_days').val(data.blacklist_days || 30);
+                        $('#max_loss_pct').val(data.max_loss_pct || 10);
+                        $('#risk_parity_lookback').val(data.risk_parity_lookback || 100);
+                        $('#risk_parity_adjustment').val(data.risk_parity_adjustment || 0.05);
+                        $('#window').val(data.window || 500);
+
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error loading bot config:', error);
+                    console.error('Response:', xhr.responseText);
+                    alert('Lỗi khi tải cấu hình bot: ' + error);
+                }
+            });
+        };
+        // Open Positions
+        function loadOpenPositions() {
+            fetch('/api/open_positions')
+                .then(response => response.json())
+                .then(positions => {
+                    const tableBody = document.getElementById('open-positions-table-body');
+                    tableBody.innerHTML = '';
+
+                    if (positions.length === 0) {
+                        const row = document.createElement('tr');
+                        row.innerHTML = '<td colspan="10" class="text-center">No open positions</td>';
+                        tableBody.appendChild(row);
+                        return;
+                    }
+
+                    // Sort positions by entry time (newest first)
+                    positions.sort((a, b) => {
+                        const timeA = new Date(a.entry_time || a.entryTime || '');
+                        const timeB = new Date(b.entry_time || b.entryTime || '');
+                        return timeB - timeA; // Newest first
+                    });
+
+                    positions.forEach(position => {
+                        // Format entry time
+                        let entryTime;
+                        try {
+                            entryTime = new Date(position.entry_time || position.entryTime).toLocaleString();
+                        } catch (e) {
+                            entryTime = 'N/A';
+                        }
+
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${position.symbol || '-'}</td>
+                            <td>${position.side || '-'}</td>
+                            <td>${position.quantity || '-'}</td>
+                            <td>${position.entryPrice || '-'}</td>
+                            <td>
+                                <span class="${position.status === 'OPEN' ? 'status-active' : 'status-inactive'}">
+                                    ${position.status === 'OPEN' ? 'Active' : 'Inactive'}
+                                </span>
+                            </td>
+                            <td>${entryTime}</td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                })
+                .catch(error => console.error('Error loading open positions:', error));
+        }
+
+        // Trade History
+        function loadTradeHistory() {
+            const tableBody = document.getElementById('trade-history-table-body');
+
+            if (!tableBody) {
+                console.error("Trade history table body element not found");
+                return;
+            }
+
+            // Show loading indicator
+            tableBody.innerHTML = '<tr><td colspan="10" class="text-center">Loading trade history...</td></tr>';
+
+            fetch('/api/trade_history')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Trade history data received:", data);
+
+                    if (!data || !Array.isArray(data) || data.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="10" class="text-center">No trade history available</td></tr>';
+
+                        // Also update summary stats
+                        document.getElementById('closed-trades').textContent = "0";
+                        document.getElementById('average-pnl').textContent = "0.00";
+                        document.getElementById('average-percent').textContent = "0.00%";
+                        return;
+                    }
+
+                    // Clear the table
+                    tableBody.innerHTML = '';
+
+                    // Calculate summary statistics
+                    const totalTrades = data.length;
+                    let totalPnl = 0;
+                    let totalNotional = 0; // Initialize total notional value
+
+                    // Sort by timestamp (most recent first)
+                    data.sort((a, b) => {
+                        const timestampA = a.exitTimeStamp || a.timestamp || 0;
+                        const timestampB = b.exitTimeStamp || b.timestamp || 0;
+                        return timestampB - timestampA;
+                    });
+
+                    // Render each row
+                    data.forEach(trade => {
+                        const row = document.createElement('tr');
+
+                        // Format date - handle different timestamp formats
+                        let exitTime;
+                        if (trade.exitTime) {
+                            exitTime = new Date(trade.exitTime);
+                        } else if (trade.exitTimeStamp) {
+                            exitTime = new Date(trade.exitTimeStamp * 1000);
+                        } else if (trade.timestamp) {
+                            exitTime = new Date(trade.timestamp * 1000);
+                        } else {
+                            exitTime = new Date(); // Fallback
+                        }
+
+                        const formattedDate = exitTime.toLocaleDateString() + ' ' + exitTime.toLocaleTimeString();
+
+                        // Get profit value, ensure it's a number
+                        let profit = 0;
+                        if (trade.profit !== undefined && trade.profit !== null) {
+                            profit = parseFloat(trade.profit);
+                        } else if (trade.pnl !== undefined && trade.pnl !== null) {
+                            profit = parseFloat(trade.pnl);
+                        }
+
+                        // Add to total for statistics
+                        if (!isNaN(profit)) {
+                            totalPnl += profit;
+                        }
+
+                        // Accumulate notional value (assuming 'notional' field exists in API response)
+                        const notional = parseFloat(trade.notional ?? 0); // Use nullish coalescing and default to 0
+                        if (!isNaN(notional)) {
+                            totalNotional += notional;
+                        }
+
+                        // Calculate profit/loss class
+                        const profitClass = profit >= 0 ? 'text-success' : 'text-danger';
+
+                        // Fix potential null/undefined values with nullish coalescing
+                        const symbolA = trade.symbol ?? 'N/A';
+                        const side = trade.side ?? 'N/A';
+                        const entryPrice = trade.entryPrice !== undefined ? parseFloat(trade.entryPrice) : null;
+                        const closePrice = trade.closePrice !== undefined ? parseFloat(trade.closePrice) : null;
+                        row.innerHTML = `
+                            <td>${symbol}</td>
+                            <td>${side}</td>
+                            <td>${formattedDate}</td>
+                            <td>${entryPrice !== null ? entryPrice.toFixed(5) : 'N/A'}</td>
+                            <td>${closePrice !== null ? closePrice.toFixed(5) : 'N/A'}</td>
+                            <td class="${profitClass}">${profit.toFixed(4)}</td>
+                        `;
+
+                        tableBody.appendChild(row);
+                    });
+
+                    // Update summary statistics
+                    const avgPnl = totalTrades > 0 ? totalPnl / totalTrades : 0;
+                    const avgNotional = totalTrades > 0 ? totalNotional / totalTrades : 0; // Calculate average notional
+
+                    document.getElementById('closed-trades').textContent = totalTrades.toString();
+                    document.getElementById('average-pnl').textContent = avgPnl.toFixed(4);
+                    // Update the 'average-percent' element with the average notional value
+                    const avgPercentElement = document.getElementById('average-percent');
+                    const avgPercentLabel = avgPercentElement.nextElementSibling; // Get the <p> tag sibling
+
+                    if (avgPercentLabel && avgPercentLabel.tagName === 'P') {
+                        avgPercentLabel.textContent = 'Average Notional'; // Update the label text
+                    }
+                    avgPercentElement.textContent = `$${avgNotional.toFixed(2)}`; // Display average notional with $ sign
+                })
+                .catch(error => {
+                    console.error("Error fetching trade history:", error);
+                    tableBody.innerHTML = `<tr><td colspan="10" class="text-danger">Error loading trade history: ${error.message}</td></tr>`;
+
+                    // Reset summary stats on error
+                    document.getElementById('closed-trades').textContent = "0";
+                    document.getElementById('average-pnl').textContent = "0.00";
+                    // Reset average notional and label on error
+                    const avgPercentElementOnError = document.getElementById('average-percent');
+                    const avgPercentLabelOnError = avgPercentElementOnError.nextElementSibling;
+
+                    if (avgPercentLabelOnError && avgPercentLabelOnError.tagName === 'P') {
+                        avgPercentLabelOnError.textContent = 'Average Notional'; // Reset label text
+                    }
+                    avgPercentElementOnError.textContent = "$0.00"; // Reset average notional on error
+                });
+        }
+
+        // Function to render the chart with the data
+        function renderSymbolFrequencyChart(data) {
+            // Extract symbols and counts for the chart
+            const symbols = data.map(item => item.symbol);
+            const counts = data.map(item => item.count);
+
+            // Determine chart type based on current view
+            const chartType = currentView === 'bar' ? 'bar' : 'column';
+
+            // Create the chart
+            Highcharts.chart('frequencyChart', {
+                chart: {
+                    type: chartType,
+                    zoomType: 'x',
+                    height: 700
+                },
+                title: {
+                    text: 'Symbol Frequency in Trading Symbols'
+                },
+                subtitle: {
+                    text: `Showing ${data.length} symbols out of ${allSymbolData.length} total symbols`
+                },
+                xAxis: {
+                    categories: symbols,
+                    title: {
+                        text: 'Symbol'
+                    },
+                    labels: {
+                        rotation: -45,
+                        style: {
+                            fontSize: '10px'
+                        }
+                    }
+                },
+                yAxis: {
+                    title: {
+                        text: 'Frequency'
+                    },
+                    min: 0
+                },
+                legend: {
+                    enabled: false
+                },
+                tooltip: {
+                    pointFormat: 'Frequency: <b>{point.y}</b>'
+                },
+                series: [{
+                    name: 'Frequency',
+                    data: counts,
+                    dataLabels: {
+                        enabled: true,
+                        rotation: -90,
+                        color: '#FFFFFF',
+                        align: 'right',
+                        format: '{point.y}',
+                        y: 10,
+                        style: {
+                            fontSize: '10px',
+                            fontFamily: 'Verdana, sans-serif'
+                        }
+                    },
+                    pointWidth: data.length > 100 ? 5 : (data.length > 50 ? 10 : 20) // Adjust bar width based on data points
+                }],
+                credits: {
+                    enabled: false
+                },
+                plotOptions: {
+                    bar: {
+                        colorByPoint: true,
+                        colors: data.map((item, index) => {
+                            // Special color for 'Others' category
+                            if (item.symbol === 'Others') {
+                                return '#999999'; // Grey color for Others
+                            } else {
+                                // Regular color scheme for normal symbols
+                                return Highcharts.getOptions().colors[index % Highcharts.getOptions().colors.length];
+                            }
+                        })
+                    },
+                    column: {
+                        colorByPoint: true,
+                        colors: data.map((item, index) => {
+                            // Special color for 'Others' category
+                            if (item.symbol === 'Others') {
+                                return '#999999'; // Grey color for Others
+                            } else {
+                                // Regular color scheme for normal symbols
+                                return Highcharts.getOptions().colors[index % Highcharts.getOptions().colors.length];
+                            }
+                        })
+                    }
+                }
+            });
+        }
+
+        // Add event listeners
+        document.addEventListener('DOMContentLoaded', function () {
+            // Symbol Histogram buttons
+            const toggleViewBtn = document.getElementById('toggleView');
+            const sortByNameBtn = document.getElementById('sortByName');
+            const sortByFrequencyBtn = document.getElementById('sortByFrequency');
+            const symbolSearch = document.getElementById('symbolSearch');
+            const symbolLimit = document.getElementById('symbolLimit');
+            const groupOthers = document.getElementById('groupOthers');
+            const prevPageBtn = document.getElementById('prevPage');
+            const nextPageBtn = document.getElementById('nextPage');
+
+            // Toggle view button
+            if (toggleViewBtn) {
+                toggleViewBtn.addEventListener('click', function () {
+                    currentView = currentView === 'bar' ? 'column' : 'bar';
+                    applyFiltersAndRender();
+                });
+            }
+
+            // Sort buttons
+            if (sortByNameBtn) {
+                sortByNameBtn.addEventListener('click', function () {
+                    currentSort = 'name';
+                    applyFiltersAndRender();
+                });
+            }
+
+            if (sortByFrequencyBtn) {
+                sortByFrequencyBtn.addEventListener('click', function () {
+                    currentSort = 'frequency';
+                    applyFiltersAndRender();
+                });
+            }
+
+            // Search input
+            if (symbolSearch) {
+                symbolSearch.addEventListener('input', function () {
+                    // Reset to first page when searching
+                    currentPage = 1;
+                    applyFiltersAndRender();
+                });
+            }
+
+            // Limit select
+            if (symbolLimit) {
+                symbolLimit.addEventListener('change', function () {
+                    // Reset to first page when changing limit
+                    currentPage = 1;
+                    applyFiltersAndRender();
+                });
+            }
+
+            // Group others checkbox
+            if (groupOthers) {
+                groupOthers.addEventListener('change', function () {
+                    applyFiltersAndRender();
+                });
+            }
+
+            // Pagination buttons
+            if (prevPageBtn) {
+                prevPageBtn.addEventListener('click', function () {
+                    if (currentPage > 1) {
+                        currentPage--;
+                        applyFiltersAndRender();
+                    }
+                });
+            }
+
+            if (nextPageBtn) {
+                nextPageBtn.addEventListener('click', function () {
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        applyFiltersAndRender();
+                    }
+                });
+            }
+
+            // Fix for tab activation - use Bootstrap's Tab API properly
+            const triggerTabList = [].slice.call(document.querySelectorAll('a[data-bs-toggle="tab"]'));
+            triggerTabList.forEach(function (triggerEl) {
+                triggerEl.addEventListener('click', function (event) {
+                    event.preventDefault();
+
+                    // Get tab target
+                    const tabTarget = this.getAttribute('href');
+                    if (!tabTarget) return;
+
+                    // Create a new Tab instance
+                    const tab = new bootstrap.Tab(triggerEl);
+                    tab.show();
+
+                    // Load data for specific tabs
+                    if (tabTarget === '#symbol-histogram') {
+                        loadSymbolFrequencyChart();
+                    } else if (tabTarget === '#positions') {
+                        loadOpenPositions();
+                    } else if (tabTarget === '#history') {
+                        loadTradeHistory();
+                    } else if (tabTarget === '#performance') {
+                        loadPerformanceStats();
+                    } else if (tabTarget === '#configs') {
+                        loadConfigs();
+                        loadBotConfig();
+                    }
+                });
+            });
+
+            // Safe element access helper
+            function safeAddEventListener(elementId, eventType, handler) {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.addEventListener(eventType, handler);
+                }
+            }
+
+            // Add event listeners safely
+            safeAddEventListener('refresh-snapshot', 'click', loadSystemSnapshot);
+            safeAddEventListener('refresh-positions', 'click', loadOpenPositions);
+            // Keep only one event listener for save-config button (the one with jQuery below)
+
+            // Check if elements exist before adding event listeners
+            const defaultConfigForm = document.getElementById('default-config-form');
+            if (defaultConfigForm) {
+                defaultConfigForm.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    saveDefaultConfig();
+                });
+            }
+
+            const historyFilterForm = document.getElementById('history-filter-form');
+            if (historyFilterForm) {
+                historyFilterForm.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    loadTradeHistory();
+                });
+            }
+
+            const clearHistoryFilter = document.getElementById('clear-history-filter');
+            if (clearHistoryFilter) {
+                clearHistoryFilter.addEventListener('click', function () {
+                    const form = document.getElementById('history-filter-form');
+                    if (form) form.reset();
+                    loadTradeHistory();
+                });
+            }
+
+            // Load initial data if we're on the dashboard tab
+            const activeTab = document.querySelector('.nav-link.active');
+            if (activeTab && activeTab.getAttribute('href') === '#dashboard') {
+                if (!window.dashboardInitialized) {
+                    initEquityChart(); // This will call fetchEquityData() internally
+                    fetchSymbolPerformanceData();
+                    window.dashboardInitialized = true;
+                }
+            }
+
+            // Initial symbol histogram load if we're on that tab
+            if (activeTab && activeTab.getAttribute('href') === '#symbol-histogram') {
+                loadSymbolFrequencyChart();
+            }
+        });
+
+        // Function to update the equity performance chart
+        function updateEquityPerformanceChart(equityData) {
+            const ctx = document.getElementById('equity-performance-chart');
+
+            // Clear previous chart if exists
+            if (window.equityPerformanceChart) {
+                window.equityPerformanceChart.destroy();
+            }
+
+            // Create new chart
+            window.equityPerformanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: equityData.map(point => new Date(point.timestamp)),
+                    datasets: [{
+                        label: 'Equity',
+                        data: equityData.map(point => point.value),
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'day'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Equity Value'
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Function to update the symbol cumulative performance chart
+        function updateSymbolCumulativeChart(symbolData) {
+            const ctx = document.getElementById('symbol-cumulative-chart');
+
+            // Clear previous chart if exists
+            if (window.symbolCumulativeChart) {
+                window.symbolCumulativeChart.destroy();
+            }
+
+            // Check if we have data
+            if (!symbolData || symbolData.length === 0) {
+                ctx.innerHTML = '<div class="alert alert-warning">No performance data available</div>';
+                return;
+            }
+
+            // Prepare datasets
+            const datasets = [];
+            const colors = [
+                'rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)',
+                'rgba(54, 162, 235, 1)', 'rgba(255, 206, 86, 1)',
+                'rgba(153, 102, 255, 1)', 'rgba(255, 159, 64, 1)'
+            ];
+
+            symbolData.forEach((symbol, index) => {
+                if (symbol.data && symbol.data.length > 0) {
+                    const color = colors[index % colors.length];
+                    datasets.push({
+                        label: symbol.name || `Symbol ${index + 1}`,
+                        data: symbol.data.map(point => ({
+                            x: point[0], // Trade number
+                            y: point[1]  // Cumulative PnL
+                        })),
+                        borderColor: color,
+                        backgroundColor: color.replace('1)', '0.2)'),
+                        borderWidth: 2,
+                        tension: 0.1
+                    });
+                }
+            });
+
+            // Create new chart only if we have datasets
+            if (datasets.length > 0) {
+                window.symbolCumulativeChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                title: {
+                                    display: true,
+                                    text: 'Trade Number'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Cumulative P&L'
+                                }
+                            }
+                        },
+                        plugins: {
+                            tooltip: {
+                                mode: 'nearest',
+                                intersect: false
+                            },
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Symbol Trading Cumulative Performance'
+                            }
+                        }
+                    }
+                });
+            } else {
+                ctx.innerHTML = '<div class="alert alert-warning">No chart data available</div>';
+            }
+        }
+
+        // Ensure loadPerformanceStats is called when the performance tab is activated
+        document.addEventListener('DOMContentLoaded', function () {
+            // Existing event listeners...
+
+            // Add specific tab handling for performance tab
+            document.querySelectorAll('.nav-link').forEach(tab => {
+                tab.addEventListener('click', function () {
+                    const target = this.getAttribute('href');
+                    if (target === '#performance') {
+                        loadPerformanceStats();
+                    } else if (target === '#history') {
+                        loadTradeHistory();
+                    }
+                });
+            });
+
+            // Initial loads for active tab
+            const activeTab = document.querySelector('.nav-link.active');
+            if (activeTab) {
+                const target = activeTab.getAttribute('href');
+                if (target === '#performance') {
+                    loadPerformanceStats();
+                } else if (target === '#history') {
+                    loadTradeHistory();
+                }
+            }
+        });
+
+        // Add the API test function
+        document.addEventListener('DOMContentLoaded', function () {
+            // Add test button handler
+            const testApiBtn = document.getElementById('test-api-btn');
+            if (testApiBtn) {
+                testApiBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    console.log("Testing trade_history API with direct MongoDB query format");
+
+                    // Make a fetch request to see raw MongoDB data
+                    fetch('/api/test_closed_positions')
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log("TEST API RESPONSE:", data);
+                            alert(`Found ${data.count} closed positions in the database. Check console for details.`);
+                        })
+                        .catch(error => {
+                            console.error("Test API error:", error);
+                            alert(`Error testing API: ${error.message}`);
+                        });
+                });
+            }
+
+            // Add sort buttons handlers for trade history
+            const sortByTimeBtn = document.getElementById('sort-by-time');
+            const sortByPnlBtn = document.getElementById('sort-by-pnl');
+
+            if (sortByTimeBtn) {
+                sortByTimeBtn.addEventListener('click', function () {
+                    window.currentTradeHistorySortBy = 'time';
+                    sortByTimeBtn.classList.add('active');
+                    if (sortByPnlBtn) sortByPnlBtn.classList.remove('active');
+                    loadTradeHistory();
+                });
+            }
+
+            if (sortByPnlBtn) {
+                sortByPnlBtn.addEventListener('click', function () {
+                    window.currentTradeHistorySortBy = 'pnl';
+                    sortByPnlBtn.classList.add('active');
+                    if (sortByTimeBtn) sortByTimeBtn.classList.remove('active');
+                    loadTradeHistory();
+                });
+            }
+        });
+
+        // Symbols and Alphas
+        function loadSymbols() {
+            fetch('/api/symbols')
+                .then(response => {
+                    if (!response.ok) {
+                        console.warn('Symbols endpoint not available:', response.status);
+                        return [];
+                    }
+                    return response.json();
+                })
+                .then(symbols => {
+                    const configSymbolSelect = document.getElementById('config-symbol');
+                    const historySymbolSelect = document.getElementById('history-symbol');
+
+                    // Check if elements exist before manipulating them
+                    if (configSymbolSelect) {
+                        // Clear existing options
+                        configSymbolSelect.innerHTML = '<option value="">Select Symbol</option>';
+
+                        symbols.forEach(symbolInfo => {
+                            const option1 = document.createElement('option');
+                            option1.value = symbolInfo.symbol || symbolInfo;
+                            option1.textContent = symbolInfo.symbol || symbolInfo;
+                            configSymbolSelect.appendChild(option1);
+                        });
+                    }
+
+                    if (historySymbolSelect) {
+                        // Clear existing options
+                        historySymbolSelect.innerHTML = '<option value="">All Symbols</option>';
+
+                        symbols.forEach(symbolInfo => {
+                            const option2 = document.createElement('option');
+                            option2.value = symbolInfo.symbol || symbolInfo;
+                            option2.textContent = symbolInfo.symbol || symbolInfo;
+                            historySymbolSelect.appendChild(option2);
+                        });
+                    }
+
+                    // Update global symbols list if needed
+                    window.availableSymbols = symbols;
+                })
+                .catch(error => {
+                    console.error('Error loading symbols:', error);
+                });
+        }
+
+        function loadAlphas() {
+            fetch('/api/alphas')
+                .then(response => {
+                    if (!response.ok) {
+                        console.warn('Alphas endpoint not available:', response.status);
+                        return [];
+                    }
+                    return response.json();
+                })
+                .then(alphas => {
+                    const configAlphaSelect = document.getElementById('config-alpha');
+                    const historyAlphaSelect = document.getElementById('history-alpha');
+
+                    // Check if elements exist before manipulating them
+                    if (configAlphaSelect) {
+                        // Keep the first option for config-alpha and clear the rest
+                        configAlphaSelect.innerHTML = '<option value="">All Alphas (Common config)</option>';
+
+                        alphas.forEach(alpha => {
+                            const option1 = document.createElement('option');
+                            option1.value = alpha.name || alpha;
+                            option1.textContent = alpha.name || alpha;
+                            configAlphaSelect.appendChild(option1);
+                        });
+                    }
+
+                    if (historyAlphaSelect) {
+                        // Clear existing options
+                        historyAlphaSelect.innerHTML = '<option value="">All Alphas</option>';
+
+                        alphas.forEach(alpha => {
+                            const option2 = document.createElement('option');
+                            option2.value = alpha.name || alpha;
+                            option2.textContent = alpha.name || alpha;
+                            historyAlphaSelect.appendChild(option2);
+                        });
+                    }
+
+                    // Update global alphas list if needed
+                    window.availableAlphas = alphas;
+                })
+                .catch(error => {
+                    console.error('Error loading alphas:', error);
+                });
+        }
+
+        // Update the correlation display function to include new metrics
+        function updateCorrelationDisplay() {
+            $.ajax({
+                url: '/api/equity_chart',
+                method: 'GET',
+                success: function (response) {
+                    console.log("Equity chart data received:", response);
+
+                    // Process correlation data
+                    if (response && response.correlation) {
+                        const correlation = response.correlation;
+                        const correlationValue = correlation.value;
+                        const windowSize = correlation.window;
+                        const sampleSize = correlation.sample_size;
+
+                        // Update the UI with correlation information
+                        const correlationElement = document.getElementById('btc-equity-correlation');
+                        const windowElement = document.getElementById('correlation-window');
+                        const sampleElement = document.getElementById('correlation-sample-size');
+
+                        if (correlationValue !== null) {
+                            correlationElement.textContent = correlationValue.toFixed(4);
+                            windowElement.textContent = `(${windowSize} period rolling window)`;
+                            sampleElement.textContent = `Based on ${sampleSize} data points`;
+                        } else {
+                            correlationElement.textContent = 'Not enough data';
+                            windowElement.textContent = '';
+                            sampleElement.textContent = 'Insufficient data points available';
+                        }
+                    }
+                    
+                    // Process long/short ratio data
+                    if (response && response.long_short_ratio) {
+                        const ratio = response.long_short_ratio;
+                        const longShortElement = document.getElementById('long-short-ratio');
+                        const longShortDetails = document.getElementById('long-short-details');
+                        
+                        if (ratio.ratio !== null) {
+                            // Format the ratio with color based on value
+                            longShortElement.textContent = ratio.ratio.toFixed(2);
+                            
+                            // Add color based on ratio value
+                            longShortElement.classList.remove('text-success', 'text-danger', 'text-warning', 'text-info');
+                            
+                            if (ratio.ratio > 1.5) {
+                                longShortElement.classList.add('text-success'); // Heavy long bias
+                            } else if (ratio.ratio < 0.5) {
+                                longShortElement.classList.add('text-danger');  // Heavy short bias
+                            } else if (ratio.ratio >= 0.8 && ratio.ratio <= 1.2) {
+                                longShortElement.classList.add('text-info');    // Balanced
+                            } else {
+                                longShortElement.classList.add('text-warning'); // Slight bias
+                            }
+                            
+                            // Format the long/short details
+                            const longSum = ratio.long_sum.toFixed(2);
+                            const shortSum = ratio.short_sum.toFixed(2);
+                            longShortDetails.textContent = `L: ${longSum} | S: ${shortSum}`;
+                        } else {
+                            longShortElement.textContent = 'N/A';
+                            longShortDetails.textContent = 'No position data';
+                        }
+                    }
+
+                    // Process equity data for metrics
+                    const currentEquityElement = document.getElementById('current-equity');
+                    const avgDailyPnlElement = document.getElementById('avg-daily-pnl');
+                    const dailyReturnElement = document.getElementById('daily-return');
+
+                    if (response && response.equity_data && response.equity_data.length > 0) {
+                        console.log("Processing equity data for metrics");
+
+                        // Get current equity (most recent value)
+                        const latestEntry = response.equity_data[response.equity_data.length - 1];
+                        const latestEquity = latestEntry.value;
+
+                        // Format and display current equity
+                        currentEquityElement.textContent = latestEquity.toFixed(2) + ' USDT';
+
+                        // Calculate average daily PnL if we have enough data
+                        if (response.equity_data.length > 1) {
+                            const firstPoint = response.equity_data[0];
+                            const firstEquity = firstPoint[1];
+                            const totalGain = latestEquity - firstEquity;
+
+                            // Calculate time difference in days
+                            const firstTimestamp = firstPoint[0];
+                            const latestTimestamp = latestEntry[0];
+                            const daysDiff = Math.max(1, (latestTimestamp - firstTimestamp) / (24 * 60 * 60 * 1000));
+
+                            // Calculate average daily PnL
+                            const avgDailyPnl = totalGain / daysDiff;
+                            avgDailyPnlElement.textContent = avgDailyPnl.toFixed(2) + ' USDT';
+                            avgDailyPnlElement.className = avgDailyPnl >= 0 ? 'text-success' : 'text-danger';
+
+                            // Calculate daily return (comparing with 1 day ago equity)
+                            const oneDayMillis = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+                            const oneDayAgoTimestamp = latestTimestamp - oneDayMillis;
+
+                            // Find the closest data point to 1 day ago
+                            let closestPoint = null;
+                            let minTimeDiff = Infinity;
+
+                            for (let i = 0; i < response.equity_data.length; i++) {
+                                const point = response.equity_data[i];
+                                const timeDiff = Math.abs(point[0] - oneDayAgoTimestamp);
+
+                                if (timeDiff < minTimeDiff) {
+                                    minTimeDiff = timeDiff;
+                                    closestPoint = point;
+                                }
+                            }
+
+                            // If we found a point and it's within 12 hours of the target (reasonably close to 1 day ago)
+                            if (closestPoint && minTimeDiff <= 12 * 60 * 60 * 1000) {
+                                const previousEquity = closestPoint[1];
+                                const dailyReturn = latestEquity - previousEquity;
+                                const dailyReturnPercent = (dailyReturn / previousEquity) * 100;
+
+                                dailyReturnElement.textContent = `${dailyReturn.toFixed(2)} USDT (${dailyReturnPercent.toFixed(2)}%)`;
+                                dailyReturnElement.className = dailyReturn >= 0 ? 'text-success' : 'text-danger';
+
+                                // Add timestamp information for debug purposes
+                                const previousDate = new Date(closestPoint[0]);
+                                const timeDiffHours = (minTimeDiff / (60 * 60 * 1000)).toFixed(1);
+                                console.log(`Daily return calculated using data from ${previousDate.toLocaleString()}, which is ${timeDiffHours} hours from target`);
+                            } else if (response.equity_data.length >= 2) {
+                                // Fallback: if we don't have data from close to 1 day ago, use the oldest available point
+                                // Only use this if the data spans at least 12 hours
+                                const oldestPoint = response.equity_data[0];
+                                const hoursDiff = (latestTimestamp - oldestPoint[0]) / (60 * 60 * 1000);
+
+                                if (hoursDiff >= 12) {
+                                    const previousEquity = oldestPoint[1];
+                                    const totalReturn = latestEquity - previousEquity;
+                                    // Normalize to daily rate based on actual time difference
+                                    const dailyReturn = totalReturn * (24 / hoursDiff);
+                                    const dailyReturnPercent = (dailyReturn / previousEquity) * 100;
+
+                                    dailyReturnElement.textContent = `${dailyReturn.toFixed(2)} USDT (${dailyReturnPercent.toFixed(2)}%)`;
+                                    dailyReturnElement.className = dailyReturn >= 0 ? 'text-success' : 'text-danger';
+                                    console.log(`Daily return estimated from ${hoursDiff.toFixed(1)} hours of data`);
+                                } else {
+                                    // If we don't have at least 12 hours of data, show a message indicating the return is for a shorter period
+                                    const previousPoint = response.equity_data[0];
+                                    const previousEquity = previousPoint[1];
+                                    const actualReturn = latestEquity - previousEquity;
+                                    const actualReturnPercent = (actualReturn / previousEquity) * 100;
+
+                                    dailyReturnElement.textContent = `${actualReturn.toFixed(2)} USDT (${actualReturnPercent.toFixed(2)}%) in ${hoursDiff.toFixed(1)}h`;
+                                    dailyReturnElement.className = actualReturn >= 0 ? 'text-success' : 'text-danger';
+                                }
+                            } else {
+                                dailyReturnElement.textContent = 'Insufficient data';
+                            }
+                        } else {
+                            avgDailyPnlElement.textContent = 'Insufficient data';
+                            dailyReturnElement.textContent = 'Insufficient data';
+                        }
+                    } else {
+                        console.warn("No equity data available");
+                        currentEquityElement.textContent = 'No data';
+                        avgDailyPnlElement.textContent = 'No data';
+                        dailyReturnElement.textContent = 'No data';
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error fetching equity data:', error);
+                    // Update UI to show error state
+                    const correlationElement = document.getElementById('btc-equity-correlation');
+                    correlationElement.textContent = 'Error loading data';
+                    document.getElementById('current-equity').textContent = 'Error';
+                    document.getElementById('avg-daily-pnl').textContent = 'Error';
+                    document.getElementById('daily-return').textContent = 'Error';
+                    document.getElementById('long-short-ratio').textContent = 'Error';
+                    document.getElementById('long-short-details').textContent = 'Error loading data';
+                }
+            });
+        }
+
+        // Enhanced loadChart function with proper error handling
+        function loadChart() {
+            console.log("Loading chart data...");
+            $('#chart-loading').show();
+
+            // Equity chart
+            fetch('/api/equity_chart')
+                .then(response => {
+                    console.log("Equity chart API response status:", response.status);
+                    if (!response.ok) {
+                        throw new Error(`Equity chart API error (${response.status}): ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Equity chart data received:", data);
+                    if (data && data.equity_data && data.equity_data.length > 0) {
+                        updateEquityChart(data.equity_data);
+                        updateCorrelationDisplay(data);
+                    } else {
+                        console.warn("No equity data available or empty data received");
+                        document.getElementById('equity-chart-container').innerHTML =
+                            '<div class="alert alert-warning">No equity data available</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error("Error loading equity chart:", error);
+                    document.getElementById('equity-chart-container').innerHTML =
+                        `<div class="alert alert-danger">Error loading equity data: ${error.message}</div>`;
+                });
+
+            // BTC chart
+            fetch('/api/btc_chart')
+                .then(response => {
+                    console.log("BTC chart API response status:", response.status);
+                    if (!response.ok) {
+                        throw new Error(`BTC chart API error (${response.status}): ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("BTC chart data received:", data);
+                    if (data && data.btc_data && data.btc_data.length > 0) {
+                        updateBTCChart(data.btc_data);
+                    } else {
+                        console.warn("No BTC data available or empty data received");
+                        document.getElementById('btc-chart-container').innerHTML =
+                            '<div class="alert alert-warning">No BTC price data available</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error("Error loading BTC chart:", error);
+                    document.getElementById('btc-chart-container').innerHTML =
+                        `<div class="alert alert-danger">Error loading BTC data: ${error.message}</div>`;
+                });
+
+            // Symbol Performance chart
+            fetch('/api/symbol_performance')
+                .then(response => {
+                    console.log("Symbol performance API response status:", response.status);
+                    if (!response.ok) {
+                        throw new Error(`Symbol performance API error (${response.status}): ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Symbol performance data received:", data);
+                    if (data && data.symbol_performance && data.symbol_performance.length > 0) {
+                        updateSymbolPerformanceChart(data.symbol_performance);
+                        updatePerformanceTables(data.symbol_performance);
+                    } else {
+                        console.warn("No symbol performance data available or empty data received");
+                        document.getElementById('symbol-performance-chart-container').innerHTML =
+                            '<div class="alert alert-warning">No symbol performance data available</div>';
+                        document.getElementById('symbol-performance-table').innerHTML =
+                            '<tr><td colspan="6" class="text-center">No data available</td></tr>';
+                    }
+                })
+                .catch(error => {
+                    console.error("Error loading symbol performance data:", error);
+                    document.getElementById('symbol-performance-chart-container').innerHTML =
+                        `<div class="alert alert-danger">Error loading symbol performance data: ${error.message}</div>`;
+                    document.getElementById('symbol-performance-table').innerHTML =
+                        `<tr><td colspan="6" class="text-danger">Error: ${error.message}</td></tr>`;
+                })
+                .finally(() => {
+                    $('#chart-loading').hide();
+                });
+        }
+
+        // Updated function to fetch equity data and calculate metrics properly
+        function fetchEquityData() {
+            fetch('/api/equity_chart')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Equity data received:", data);
+
+                    // Update correlation display
+                    updateCorrelationDisplay(data);
+
+                    // Update equity metrics
+                    updateEquityMetrics(data);
+
+                    // Update the equity chart
+            if (data && data.equity_data && data.equity_data.length > 0) {
+                // Trực tiếp sử dụng data.equity_data thay vì tìm kiếm "Equity 1"
+                updateEquityChart(data.equity_data);
+            } else {
+                        console.warn("No equity data available");
+                        document.getElementById('equity-chart-container').innerHTML =
+                            '<div class="alert alert-warning">No equity data available</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching equity data:", error);
+                    document.getElementById('equity-chart-container').innerHTML =
+                        `<div class="alert alert-danger">Error loading equity data: ${error.message}</div>`;
+
+                    // Set error messages for metrics
+                    document.getElementById('current-equity').textContent = 'Error';
+                    document.getElementById('avg-daily-pnl').textContent = 'Error';
+                    document.getElementById('daily-return').textContent = 'Error';
+                    document.getElementById('btc-equity-correlation').textContent = 'Error';
+                    document.getElementById('long-short-ratio').textContent = 'Error';
+                    document.getElementById('long-short-details').textContent = 'Error loading data';
+                });
+        }
+
+        // New function to update equity metrics
+        function updateEquityMetrics(data) {
+            console.log("Updating equity metrics with data:", data);
+
+            const currentEquityElement = document.getElementById('current-equity');
+            const avgDailyPnlElement = document.getElementById('avg-daily-pnl');
+            const dailyReturnElement = document.getElementById('daily-return');
+
+            if (!data || !data.equity_data || data.equity_data.length === 0) {
+                currentEquityElement.textContent = 'No data';
+                avgDailyPnlElement.textContent = 'No data';
+                dailyReturnElement.textContent = 'No data';
+                return;
+            }
+
+            // Find the Total Equity series
+            const equitySeries = data.equity_data.find(series => series.name === "Equity 1");
+
+            if (!equitySeries || !equitySeries.data || equitySeries.data.length === 0) {
+                currentEquityElement.textContent = 'No data';
+                avgDailyPnlElement.textContent = 'No data';
+                dailyReturnElement.textContent = 'No data';
+                return;
+            }
+
+            // Extract the data points
+            const equityPoints = equitySeries.data;
+
+            // Get the most recent equity value
+            const latestPoint = equityPoints[equityPoints.length - 1];
+            const latestEquity = latestPoint[1];
+
+            // Update current equity
+            currentEquityElement.textContent = latestEquity.toFixed(2) + ' USDT';
+
+            // Calculate average daily PnL if we have enough data
+            if (equityPoints.length > 1) {
+                const firstPoint = equityPoints[0];
+                const firstEquity = firstPoint[1];
+                const totalGain = latestEquity - firstEquity;
+
+                // Calculate time difference in days
+                const firstTimestamp = firstPoint[0];
+                const latestTimestamp = latestPoint[0];
+                const daysDiff = Math.max(1, (latestTimestamp - firstTimestamp) / (24 * 60 * 60 * 1000));
+
+                // Calculate average daily PnL
+                const avgDailyPnl = totalGain / daysDiff;
+                avgDailyPnlElement.textContent = avgDailyPnl.toFixed(2) + ' USDT';
+                avgDailyPnlElement.className = avgDailyPnl >= 0 ? 'text-success' : 'text-danger';
+
+                // Calculate daily return (comparing with 1 day ago equity)
+                const oneDayMillis = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+                const oneDayAgoTimestamp = latestTimestamp - oneDayMillis;
+
+                // Find the closest data point to 1 day ago
+                let closestPoint = null;
+                let minTimeDiff = Infinity;
+
+                for (let i = 0; i < equityPoints.length; i++) {
+                    const point = equityPoints[i];
+                    const timeDiff = Math.abs(point[0] - oneDayAgoTimestamp);
+
+                    if (timeDiff < minTimeDiff) {
+                        minTimeDiff = timeDiff;
+                        closestPoint = point;
+                    }
+                }
+
+                // If we found a point and it's within 12 hours of the target (reasonably close to 1 day ago)
+                if (closestPoint && minTimeDiff <= 12 * 60 * 60 * 1000) {
+                    const previousEquity = closestPoint[1];
+                    const dailyReturn = latestEquity - previousEquity;
+                    const dailyReturnPercent = (dailyReturn / previousEquity) * 100;
+
+                    dailyReturnElement.textContent = `${dailyReturn.toFixed(2)} USDT (${dailyReturnPercent.toFixed(2)}%)`;
+                    dailyReturnElement.className = dailyReturn >= 0 ? 'text-success' : 'text-danger';
+
+                    // Add timestamp information for debug purposes
+                    const previousDate = new Date(closestPoint[0]);
+                    const timeDiffHours = (minTimeDiff / (60 * 60 * 1000)).toFixed(1);
+                    console.log(`Daily return calculated using data from ${previousDate.toLocaleString()}, which is ${timeDiffHours} hours from target`);
+                } else if (equityPoints.length >= 2) {
+                    // Fallback: if we don't have data from close to 1 day ago, use the oldest available point
+                    // Only use this if the data spans at least 12 hours
+                    const oldestPoint = equityPoints[0];
+                    const hoursDiff = (latestTimestamp - oldestPoint[0]) / (60 * 60 * 1000);
+
+                    if (hoursDiff >= 12) {
+                        const previousEquity = oldestPoint[1];
+                        const totalReturn = latestEquity - previousEquity;
+                        // Normalize to daily rate based on actual time difference
+                        const dailyReturn = totalReturn * (24 / hoursDiff);
+                        const dailyReturnPercent = (dailyReturn / previousEquity) * 100;
+
+                        dailyReturnElement.textContent = `${dailyReturn.toFixed(2)} USDT (${dailyReturnPercent.toFixed(2)}%)`;
+                        dailyReturnElement.className = dailyReturn >= 0 ? 'text-success' : 'text-danger';
+                        console.log(`Daily return estimated from ${hoursDiff.toFixed(1)} hours of data`);
+                    } else {
+                        // If we don't have at least 12 hours of data, show a message indicating the return is for a shorter period
+                        const previousPoint = equityPoints[0];
+                        const previousEquity = previousPoint[1];
+                        const actualReturn = latestEquity - previousEquity;
+                        const actualReturnPercent = (actualReturn / previousEquity) * 100;
+
+                        dailyReturnElement.textContent = `${actualReturn.toFixed(2)} USDT (${actualReturnPercent.toFixed(2)}%) in ${hoursDiff.toFixed(1)}h`;
+                        dailyReturnElement.className = actualReturn >= 0 ? 'text-success' : 'text-danger';
+                    }
+                } else {
+                    dailyReturnElement.textContent = 'Insufficient data';
+                }
+            } else {
+                avgDailyPnlElement.textContent = 'Insufficient data';
+                dailyReturnElement.textContent = 'Insufficient data';
+            }
+        }
+
+        // Variables for symbol frequency chart
+        let currentView = 'bar';
+        let currentSort = 'frequency';
+        let currentPage = 1;
+        let totalPages = 1;
+        let symbolsPerPage = 20;
+
+        // Function to process and display symbol frequency data
+        function processSymbolFrequencyData() {
+            if (!window.allSymbolData || window.allSymbolData.length === 0) {
+                console.warn("No symbol data available for processing");
+                return;
+            }
+
+            const searchTerm = document.getElementById('symbolSearch').value.trim().toLowerCase();
+            const limit = parseInt(document.getElementById('symbolLimit').value);
+            const groupOthers = document.getElementById('groupOthers').checked;
+
+            // Filter data based on search term
+            let filteredData = window.allSymbolData;
+
+            if (searchTerm) {
+                filteredData = filteredData.filter(item =>
+                    item.symbol.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            // Sort data based on current preference
+            if (currentSort === 'name') {
+                // Sort by symbol name (alphabetical)
+                filteredData.sort((a, b) => a.symbol.localeCompare(b.symbol));
+            } else {
+                // Default: sort by frequency (descending)
+                filteredData.sort((a, b) => b.count - a.count);
+            }
+
+            // Apply pagination or limiting
+            let displayData = [];
+
+            if (limit > 0 && !searchTerm) {
+                // If a limit is set and no search term, just take top N
+                const topSymbols = filteredData.slice(0, limit);
+
+                if (groupOthers && filteredData.length > limit) {
+                    // Calculate sum of all other symbols
+                    const otherSymbols = filteredData.slice(limit);
+                    const otherSum = otherSymbols.reduce((sum, item) => sum + item.count, 0);
+
+                    // Add Others category if there are remaining symbols
+                    if (otherSum > 0) {
+                        displayData = [...topSymbols, { symbol: 'Others', count: otherSum }];
+                    } else {
+                        displayData = topSymbols;
+                    }
+                } else {
+                    displayData = topSymbols;
+                }
+
+                // Hide pagination controls when using limits
+                document.getElementById('paginationControls').style.display = 'none';
+            } else {
+                // Calculate total pages for pagination
+                totalPages = Math.ceil(filteredData.length / symbolsPerPage);
+
+                // Ensure current page is valid
+                if (currentPage > totalPages) {
+                    currentPage = totalPages > 0 ? totalPages : 1;
+                }
+
+                // Get current page data
+                const startIndex = (currentPage - 1) * symbolsPerPage;
+                const endIndex = Math.min(startIndex + symbolsPerPage, filteredData.length);
+                displayData = filteredData.slice(startIndex, endIndex);
+
+                // Update pagination info
+                document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
+                document.getElementById('paginationControls').style.display = totalPages > 1 ? 'flex' : 'none';
+
+                // Update button states
+                document.getElementById('prevPage').disabled = currentPage <= 1;
+                document.getElementById('nextPage').disabled = currentPage >= totalPages;
+            }
+
+            // Render the chart with display data
+            renderSymbolFrequencyChart(displayData);
+        }
+
+        // Function to render the symbol frequency chart
+        function renderSymbolFrequencyChart(data) {
+            // Extract symbols and counts for the chart
+            const symbols = data.map(item => item.symbol);
+            const counts = data.map(item => item.count);
+
+            // Determine chart type based on current view
+            const chartType = currentView === 'bar' ? 'bar' : 'column';
+
+            // Create the chart
+            Highcharts.chart('frequencyChart', {
+                chart: {
+                    type: chartType,
+                    zoomType: 'x',
+                    height: 700
+                },
+                title: {
+                    text: 'Symbol Frequency in Trading Symbols'
+                },
+                subtitle: {
+                    text: `Showing ${data.length} symbols out of ${window.allSymbolData.length} total symbols`
+                },
+                xAxis: {
+                    categories: symbols,
+                    title: {
+                        text: 'Symbol'
+                    },
+                    labels: {
+                        rotation: -45,
+                        style: {
+                            fontSize: '10px'
+                        }
+                    }
+                },
+                yAxis: {
+                    title: {
+                        text: 'Frequency'
+                    },
+                    min: 0
+                },
+                legend: {
+                    enabled: false
+                },
+                tooltip: {
+                    pointFormat: 'Frequency: <b>{point.y}</b>'
+                },
+                series: [{
+                    name: 'Frequency',
+                    data: counts,
+                    dataLabels: {
+                        enabled: true,
+                        rotation: -90,
+                        color: '#FFFFFF',
+                        align: 'right',
+                        format: '{point.y}',
+                        y: 10,
+                        style: {
+                            fontSize: '10px',
+                            fontFamily: 'Verdana, sans-serif'
+                        }
+                    },
+                    pointWidth: data.length > 100 ? 5 : (data.length > 50 ? 10 : 20) // Adjust bar width based on data points
+                }],
+                credits: {
+                    enabled: false
+                },
+                plotOptions: {
+                    bar: {
+                        colorByPoint: true,
+                        colors: data.map((item, index) => {
+                            // Special color for 'Others' category
+                            if (item.symbol === 'Others') {
+                                return '#999999'; // Grey color for Others
+                            } else {
+                                // Regular color scheme for normal symbols
+                                return Highcharts.getOptions().colors[index % Highcharts.getOptions().colors.length];
+                            }
+                        })
+                    },
+                    column: {
+                        colorByPoint: true,
+                        colors: data.map((item, index) => {
+                            // Special color for 'Others' category
+                            if (item.symbol === 'Others') {
+                                return '#999999'; // Grey color for Others
+                            } else {
+                                // Regular color scheme for normal symbols
+                                return Highcharts.getOptions().colors[index % Highcharts.getOptions().colors.length];
+                            }
+                        })
+                    }
+                }
+            });
+        }
+
+        // Helper function to apply filters and update the chart
+        function applyFiltersAndRender() {
+            processSymbolFrequencyData();
+        }
+
+        // Initialize dashboard when page loads
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initialize dashboard components only if we're on the dashboard tab
+            const activeTab = document.querySelector('.nav-link.active');
+            if (activeTab && activeTab.getAttribute('href') === '#dashboard') {
+                // Initialize the equity chart only once
+                if (!window.dashboardInitialized) {
+                    initEquityChart(); // This will call fetchEquityData() internally
+                    fetchSymbolPerformanceData();
+                    window.dashboardInitialized = true;
+                }
+            } else if (activeTab && activeTab.getAttribute('href') === '#symbol-histogram') {
+                loadSymbolFrequencyChart();
+            }
+
+            // Fix for the config modal
+            $('#save-config').on('click', function () {
+                saveConfig();
+            });
+
+            // Fix for the bot config modal
+            $('#save-bot-config').on('click', function () {
+                saveBotConfig();
+            });
+
+            // Set up symbol frequency chart filters
+            document.getElementById('toggleView').addEventListener('click', function () {
+                currentView = currentView === 'bar' ? 'column' : 'bar';
+                applyFiltersAndRender();
+            });
+
+            document.getElementById('sortByName').addEventListener('click', function () {
+                currentSort = 'name';
+                applyFiltersAndRender();
+            });
+
+            document.getElementById('sortByFrequency').addEventListener('click', function () {
+                currentSort = 'frequency';
+                applyFiltersAndRender();
+            });
+
+            document.getElementById('symbolSearch').addEventListener('input', function () {
+                currentPage = 1;
+                applyFiltersAndRender();
+            });
+
+            document.getElementById('symbolLimit').addEventListener('change', function () {
+                currentPage = 1;
+                applyFiltersAndRender();
+            });
+
+            document.getElementById('groupOthers').addEventListener('change', function () {
+                applyFiltersAndRender();
+            });
+
+            document.getElementById('prevPage').addEventListener('click', function () {
+                if (currentPage > 1) {
+                    currentPage--;
+                    applyFiltersAndRender();
+                }
+            });
+
+            document.getElementById('nextPage').addEventListener('click', function () {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    applyFiltersAndRender();
+                }
+            });
+
+            // Add custom tab activation to ensure data is loaded
+            document.querySelectorAll('.nav-link').forEach(tab => {
+                tab.addEventListener('click', function (e) {
+                    const tabId = this.getAttribute('href').substring(1);
+
+                    // Load specific data based on tab
+                    if (tabId === 'dashboard') {
+                        if (!window.dashboardInitialized) {
+                            initEquityChart(); // This will call fetchEquityData() internally
+                            fetchSymbolPerformanceData();
+                            window.dashboardInitialized = true;
+                        }
+                    } else if (tabId === 'symbol-histogram') {
+                        loadSymbolFrequencyChart();
+                    } else if (tabId === 'performance') {
+                        loadPerformanceStats();
+                    } else if (tabId === 'positions') {
+                        loadOpenPositions();
+                    } else if (tabId === 'configs') {
+                        loadConfigs();
+                    }
+                });
+            });
+        });
+
+        // Function to load Symbol Frequency chart data
+        function loadSymbolFrequencyChart() {
+            console.log("Loading symbol frequency data...");
+            fetch('/api/symbol_frequency') // TODO: Verify this endpoint
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Symbol frequency data received:", data);
+                    if (data && data.symbol_frequency) { // TODO: Verify this data key
+                        window.allSymbolData = data.symbol_frequency; // Store data globally
+                        processSymbolFrequencyData(); // Process and render the chart
+                    } else {
+                        console.warn("No symbol frequency data found in response key 'symbol_frequency'");
+                        window.allSymbolData = []; // Reset data
+                        document.getElementById('frequencyChart').innerHTML =
+                            '<div class="alert alert-warning">No symbol frequency data available</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error("Error loading symbol frequency data:", error);
+                    window.allSymbolData = []; // Reset data on error
+                    document.getElementById('frequencyChart').innerHTML =
+                        `<div class="alert alert-danger">Error loading symbol frequency data: ${error.message}</div>`;
+                });
+        }
+
+        // Function to fetch symbol performance data
+        function fetchSymbolPerformanceData() {
+            console.log("Fetching symbol performance data...");
+            fetch('/api/symbol_performance')
+                .then(response => {
+                    console.log("Symbol performance API response status:", response.status);
+                    if (!response.ok) {
+                        throw new Error(`Symbol performance API error (${response.status}): ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Symbol performance data received:", data);
+                    if (data && data.symbol_performance && data.symbol_performance.length > 0) {
+                        updateSymbolPerformanceChart(data.symbol_performance);
+                        updatePerformanceTables(data.symbol_performance);
+                    } else {
+                        console.warn("No symbol performance data available or empty data received");
+                        document.getElementById('symbol-performance-chart-container').innerHTML =
+                            '<div class="alert alert-warning">No symbol performance data available</div>';
+                        document.getElementById('symbol-performance-table').innerHTML =
+                            '<tr><td colspan="6" class="text-center">No data available</td></tr>';
+                    }
+                })
+                .catch(error => {
+                    console.error("Error loading symbol performance data:", error);
+                    document.getElementById('symbol-performance-chart-container').innerHTML =
+                        `<div class="alert alert-danger">Error loading symbol performance data: ${error.message}</div>`;
+                    document.getElementById('symbol-performance-table').innerHTML =
+                        `<tr><td colspan="6" class="text-danger">Error: ${error.message}</td></tr>`;
+                });
+        }
+
+        // Function to update symbol performance chart
+        function updateSymbolPerformanceChart(symbolData) {
+            const ctx = document.getElementById('symbol-performance-chart');
+
+            // Clear previous chart if exists
+            if (window.symbolPerformanceChart) {
+                window.symbolPerformanceChart.destroy();
+            }
+
+            // Check if we have data
+            if (!symbolData || symbolData.length === 0) {
+                ctx.innerHTML = '<div class="alert alert-warning">No performance data available</div>';
+                return;
+            }
+
+            // Prepare datasets
+            const datasets = [];
+            const colors = [
+                'rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)',
+                'rgba(54, 162, 235, 1)', 'rgba(255, 206, 86, 1)',
+                'rgba(153, 102, 255, 1)', 'rgba(255, 159, 64, 1)'
+            ];
+
+            symbolData.forEach((symbol, index) => {
+                if (symbol.data && symbol.data.length > 0) {
+                    const color = colors[index % colors.length];
+                    datasets.push({
+                        label: symbol.name || `Symbol ${index + 1}`,
+                        data: symbol.data.map(point => ({
+                            x: point[0], // Trade number
+                            y: point[1]  // Cumulative PnL
+                        })),
+                        borderColor: color,
+                        backgroundColor: color.replace('1)', '0.2)'),
+                        borderWidth: 2,
+                        tension: 0.1
+                    });
+                }
+            });
+
+            // Create new chart only if we have datasets
+            if (datasets.length > 0) {
+                window.symbolPerformanceChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                title: {
+                                    display: true,
+                                    text: 'Trade Number'
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Cumulative P&L'
+                                }
+                            }
+                        },
+                        plugins: {
+                            tooltip: {
+                                mode: 'nearest',
+                                intersect: false
+                            },
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Symbol Trading Cumulative Performance'
+                            }
+                        }
+                    }
+                });
+            } else {
+                ctx.innerHTML = '<div class="alert alert-warning">No chart data available</div>';
+            }
+        }
+
+        // Function to cleanup leftover modal backdrops after manual modal hide
+        function cleanupModalBackdrops() {
+            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+            document.body.classList.remove('modal-open');
+        }
+
+        // Function to load the bot status
+        function loadBotStatus() {
+            fetch('/api/bot_config')
+                .then(response => response.json())
+                .then(data => {
+                    const isActive = data.is_active || false;
+                    updateBotStatusButton(isActive);
+                })
+                .catch(error => {
+                    console.error('Error loading bot status:', error);
+                    document.getElementById('bot-status-text').textContent = 'Error';
+                    document.getElementById('toggle-bot-status').classList.replace('btn-warning', 'btn-danger');
+                });
+        }
+
+        // Function to toggle the bot status
+        function toggleBotStatus() {
+            // Show loading state
+            const button = document.getElementById('toggle-bot-status');
+            const statusText = document.getElementById('bot-status-text');
+            button.disabled = true;
+            statusText.textContent = 'Updating...';
+
+            fetch('/api/toggle_bot_status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update the button to reflect the new status
+                    updateBotStatusButton(data.is_active);
+                    
+                    // Display a notification
+                    const message = data.is_active 
+                        ? 'Bot activated! Will now open new positions.' 
+                        : 'Bot deactivated! Will only monitor existing positions.';
+                    showAlert(message, data.is_active ? 'success' : 'warning');
+                } else {
+                    showAlert('Failed to update bot status: ' + (data.error || 'Unknown error'), 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error toggling bot status:', error);
+                showAlert('Error toggling bot status. Check console for details.', 'danger');
+                statusText.textContent = 'Error';
+                button.classList.replace('btn-warning', 'btn-danger');
+            })
+            .finally(() => {
+                button.disabled = false;
+            });
+        }
+
+        // Function to update the bot status button appearance
+        function updateBotStatusButton(isActive) {
+            const button = document.getElementById('toggle-bot-status');
+            const statusText = document.getElementById('bot-status-text');
+            
+            if (isActive) {
+                button.classList.remove('btn-danger', 'btn-success');
+                button.classList.add('btn-success');
+                statusText.textContent = 'Bot ACTIVE';
+            } else {
+                button.classList.remove('btn-danger', 'btn-success');
+                button.classList.add('btn-danger');
+                statusText.textContent = 'Bot INACTIVE';
+            }
+        }
+
+        // Function to show alert messages
+        function showAlert(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+            alertDiv.setAttribute('role', 'alert');
+            alertDiv.style.zIndex = '9999';
+            
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            
+            document.body.appendChild(alertDiv);
+            
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                alertDiv.classList.remove('show');
+                setTimeout(() => alertDiv.remove(), 150);
+            }, 5000);
+        }
+
+        // Call loadBotStatus when the document is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Existing DOMContentLoaded events would be here
+            
+            // Load bot status
+            loadBotStatus();
+            
+            // Setup Bot Status toggle button
+            document.getElementById('toggle-bot-status').addEventListener('click', function() {
+                toggleBotStatus();
+            });
+        });
+    </script>
+</body>
+
+</html>
