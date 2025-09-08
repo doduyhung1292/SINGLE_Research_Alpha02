@@ -19,9 +19,7 @@ DEFAULT_CONFIG = {
 # Default trading pairs for initialization
 DEFAULT_PAIRS = [
     {
-        "symbolA": "VANRY",
-        "symbolB": "MAV",
-        "tradeSymbol": "MAV",  # Add tradeSymbol, default to symbolB
+        "symbol": "VANRY",
         "is_active": True,
         "timeframe": "15m",
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
