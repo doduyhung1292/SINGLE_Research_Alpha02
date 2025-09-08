@@ -380,9 +380,9 @@ def process_open_position(position_id: str, map_data: Dict[str, Any], client_ord
                 return True
             else:
                 logger.error(f"Failed to save position {position_id} to database")
-                # Thử cách khác: save_symbol_position_to_db
+                # Thử cách khác: save_position_to_db
                 try:
-                    save_result = save_symbol_position_to_db(position_data)
+                    save_result = save_position_to_db(position_data)
                     logger.info(f"Tried alternative save method for {symbol}")
                     if save_result is not None:
                         logger.info(f"Successfully saved position {position_id} using save_symbol_position_to_db")
@@ -596,9 +596,9 @@ def process_missed_position(position_id: str, map_data: Dict[str, Any], order_ty
                 return True
             else:
                 logger.error(f"Failed to save missed position {position_id} to database")
-                # Thử cách khác: save_symbol_position_to_db
+                # Thử cách khác: save_position_to_db
                 try:
-                    save_result = save_symbol_position_to_db(position_data)
+                    save_result = save_position_to_db(position_data)
                     if save_result is not None:
                         logger.info(f"Successfully saved missed position {position_id} using save_symbol_position_to_db")
                         # Thêm thông báo Telegram

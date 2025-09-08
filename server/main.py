@@ -1485,7 +1485,7 @@ def get_symbols():
         # Try to get symbols from solo_alpha01 database
         lambda_client = pymongo.MongoClient(os.getenv("MONGO_HOST_URI"))
         lambda_db = lambda_client["solo_alpha01"]
-        symbols_collection = lambda_db["symbols"]
+        symbols_collection = lambda_db["trade_symbols"]
         symbols = list(symbols_collection.find())
 
         # If no symbols found, extract unique symbols from symbols

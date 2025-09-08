@@ -77,9 +77,13 @@ def setup_logging():
 def schedule_tasks():
     """Schedule regular tasks for the bot."""
     # Schedule to run at 15-minute intervals
-    for hour in [0, 4, 8, 12, 16, 20]:
-        schedule.every().day.at(f"{hour:02d}:00").do(main_trading_logic)
-        logging.debug(f"Scheduled main trading logic to run at {hour:02d}:00")
+    # for hour in [0, 4, 8, 12, 16, 20]:
+    #     schedule.every().day.at(f"{hour:02d}:00").do(main_trading_logic)
+    #     logging.debug(f"Scheduled main trading logic to run at {hour:02d}:00")
+
+    for minute in range(0, 60, 1):
+        schedule.every().hour.at(f":{minute:02d}").do(main_trading_logic)
+        logging.debug(f"Scheduled main trading logic to run at minute {minute:02d}")
 
     # Schedule symbol info refresh daily at midnight
     schedule.every().day.at("00:00").do(refresh_symbol_info)
