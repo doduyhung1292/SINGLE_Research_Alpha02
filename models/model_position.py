@@ -114,8 +114,7 @@ def update_order_status(position_data: Dict[str, Any]) -> bool:
             "exit_reason",
             "exit_spread",
             "exit_time",
-            "closePriceA",
-            "closePriceB",
+            "closePrice",
             "pnl",
             "close_order_id",
         ]
