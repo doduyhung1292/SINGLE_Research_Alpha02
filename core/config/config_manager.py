@@ -7,7 +7,7 @@ from models.model_config import get_config_from_db, save_config_to_db
 from models.model_trade_symbols import get_all_symbols, save_symbol_to_db
 from models.model_symbol import save_symbol_info_to_db, get_symbol_info_from_db
 
-from core.config.constants import DEFAULT_CONFIG, DEFAULT_PAIRS, CONFIG
+from core.config.constants import DEFAULT_CONFIG, DEFAULT_SYMBOLS, CONFIG
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ def initialize_symbols():
         existing_symbols = get_all_symbols()
         if not existing_symbols:
             logger.info("No trading symbols found in database. Adding default symbols.")
-            for symbol in existing_symbols:
+            for symbol in DEFAULT_SYMBOLS:
                 save_symbol_to_db(symbol)
                 logger.info(
                     f"Added default symbol {symbol['symbol']} to database."
@@ -215,8 +215,8 @@ def get_unique_symbols(list_symbols: List[Dict[str, Any]]) -> List[str]:
     """Extract unique symbols from all list_symbols."""
     try:
         symbols = set()
-        for pair in list_symbols:
-            symbols.add(pair["symbol"])
+        for symbol in list_symbols:
+            symbols.add(symbol["symbol"])
         return list(symbols)
     except Exception as e:
         logger.error(f"Error extracting unique symbols: {e}")

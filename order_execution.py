@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 def check_existing_open_position(symbol: str) -> bool:
     """
-    Kiểm tra xem đã có vị thế đang mở cho cặp symbolA-symbolB trong database hay chưa
+    Kiểm tra xem đã có vị thế đang mở cho cặp symbol trong database hay chưa
     
     Args:
         symbol
@@ -309,7 +309,7 @@ def process_open_position(position_id: str, map_data: Dict[str, Any], client_ord
     # Kiểm tra tất cả các client_order_id trong success_status
     trade_success = False
     
-    # Kiểm tra nếu có bất kỳ client_order_id nào bắt đầu bằng symbolA_symbolB đã thành công
+    # Kiểm tra nếu có bất kỳ client_order_id nào bắt đầu bằng symbol đã thành công
     for success_client_id in map_data["success_status"].keys():
         if success_client_id.lower().startswith(f"{symbol.lower()}_") and map_data["success_status"][success_client_id]:
             trade_success = True
@@ -335,7 +335,7 @@ def process_open_position(position_id: str, map_data: Dict[str, Any], client_ord
 
         # Lấy giá entry từ kết quả API nếu có
         price_data = None
-        # Tìm kiếm bất kỳ client_order_id nào bắt đầu bằng symbolA_symbolB_
+        # Tìm kiếm bất kỳ client_order_id nào bắt đầu bằng symbol_
         for filled_client_id, filled_data in client_order_id_to_filled_data.items():
             if filled_client_id.startswith(f"{symbol.lower()}_"):
                 price_data = filled_data
@@ -363,8 +363,7 @@ def process_open_position(position_id: str, map_data: Dict[str, Any], client_ord
             if save_result:
                 logger.info(f"Successfully saved new position {position_id} for {symbol} to database, ID: {save_result}")
                 # Thêm thông báo Telegram
-                epA = position_data.get("entryPriceA", "N/A")
-                epB = position_data.get("entryPriceB", "N/A")
+                epA = position_data.get("entryPrice", "N/A")
                 prev_s = position_data.get("prev_entry_spread", "N/A")
                 s = position_data.get("entry_spread", "N/A")
                 mb = position_data.get("entry_middle_band", "N/A")
@@ -374,7 +373,7 @@ def process_open_position(position_id: str, map_data: Dict[str, Any], client_ord
                 m = position_data.get("entry_multiplier", "N/A")
 
                 open_msg = f"Đã mở vị thế mới cho cặp {symbol}.\n"
-                open_msg += f"Giá entry: A={epA}, B={epB}\n"
+                open_msg += f"Giá entry: {epA} \n"
                 open_msg += f"Prev Spread: {f'{prev_s:.6f}' if isinstance(prev_s, float) else str(prev_s)}, Spread: {f'{s:.6f}' if isinstance(s, float) else str(s)}\n"
                 open_msg += f"Bands (W:{w}, M:{m}): L={f'{lb:.6f}' if isinstance(lb, float) else str(lb)}, Mid={f'{mb:.6f}' if isinstance(mb, float) else str(mb)}, U={f'{ub:.6f}' if isinstance(ub, float) else str(ub)}"
                 send_telegram_message(open_msg)

@@ -216,7 +216,7 @@ def main_trading_logic():
 
             except Exception as e:
                 logger.error(
-                    f"Error processing symbol {symbol_.get('symbolA')}: {e}"
+                    f"Error processing symbol {symbol_.get('symbol')}: {e}"
                 )
                 logger.error(traceback.format_exc())
 

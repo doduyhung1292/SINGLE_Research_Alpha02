@@ -16,8 +16,8 @@ DEFAULT_CONFIG = {
     "is_active": True,  # Whether the bot is active (allowed to open new positions)
 }
 
-# Default trading pairs for initialization
-DEFAULT_PAIRS = [
+# Default trading symbols for initialization
+DEFAULT_SYMBOLS = [
     {
         "symbol": "VANRY",
         "is_active": True,
@@ -43,7 +43,7 @@ class Position:
 
 
 # Default paths for log file and cache directory
-DEFAULT_DATA_ROOT = "C:/bot_temp_data_pair_trading"
+DEFAULT_DATA_ROOT = "C:/bot_temp_data_solo_trading"
 DEFAULT_LOG_FILE_PATH = f"{DEFAULT_DATA_ROOT}/bot.log"
 DEFAULT_CACHE_DIR_PATH = f"{DEFAULT_DATA_ROOT}/data_cache"
 
