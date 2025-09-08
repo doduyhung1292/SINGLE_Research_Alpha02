@@ -399,7 +399,7 @@ app.jinja_env.filters["fromjson"] = lambda s: json.loads(s)
 # Kết nối đến MongoDB
 def get_db():
     client = MongoClient(os.getenv("MONGO_HOST_URI"))
-    return client["crypto_db"]
+    return client["solo_alpha01"]
 
 
 def get_config_collection():
