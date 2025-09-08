@@ -756,16 +756,9 @@ def get_balance():
                 "updated_at": equity_data.get("timestamp"),
             }
         )
-    return jsonify({"error": "Balance information not found"}), 404
+    return jsonify({"error": "Balance information not found"})
 
 
-# API lấy danh sách symbols
-@app.route("/api/symbols", methods=["GET"])
-def get_symbols():
-    symbols_coll = get_symbols_collection()
-    symbol_docs = list(symbols_coll.find())
-
-    return jsonify(json.loads(JSONEncoder().encode(symbol_docs)))
 
 
 # API lấy danh sách lệnh đang mở
