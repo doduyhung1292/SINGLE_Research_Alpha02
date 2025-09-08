@@ -1027,8 +1027,7 @@
                     const blacklistSet = new Set();
                     if (window.blacklistedSymbols) {
                         window.blacklistedSymbols.forEach(item => {
-                            blacklistSet.add(`${item.symbolA}:${item.symbolB}`);
-                            blacklistSet.add(`${item.symbolB}:${item.symbolA}`); // Also add reverse symbol
+                            blacklistSet.add(`${item.symbol}`);
                         });
                     }
 
@@ -1038,7 +1037,7 @@
                         row.setAttribute('data-id', config._id);
 
                         // Check if this symbol is blacklisted
-                        const symbolIdentifier = `${config.symbolA}:${config.symbolB}`;
+                        const symbolIdentifier = `${config.symbol}`;
                         const isBlacklisted = blacklistSet.has(symbolIdentifier);
 
                         // Add blacklisted class if needed
@@ -1100,7 +1099,7 @@
                 .then(response => response.json())
                 .then(config => {
                     document.getElementById('config-id').value = config._id;
-                    document.getElementById('config-symbol').value = config.symbolA || '';
+                    document.getElementById('config-symbol').value = config.symbol || '';
                     document.getElementById('config-alpha').value = config.alpha || '';
                     document.getElementById('config-order-size').value = config.order_size_percent;
                     document.getElementById('config-leverage').value = config.leverage;
@@ -1119,7 +1118,7 @@
             const isNewConfig = !configId;
 
             const data = {
-                symbolA: $('#symbol').val(),
+                symbol: $('#symbol').val(),
                 timeframe: $('#timeframe').val(),         
                 is_active: $('#is_active').prop('checked'),
             };
@@ -1439,7 +1438,7 @@
                         const profitClass = profit >= 0 ? 'text-success' : 'text-danger';
 
                         // Fix potential null/undefined values with nullish coalescing
-                        const symbolA = trade.symbol ?? 'N/A';
+                        const symbol = trade.symbol ?? 'N/A';
                         const side = trade.side ?? 'N/A';
                         const entryPrice = trade.entryPrice !== undefined ? parseFloat(trade.entryPrice) : null;
                         const closePrice = trade.closePrice !== undefined ? parseFloat(trade.closePrice) : null;
