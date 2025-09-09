@@ -116,7 +116,7 @@ def update_order_status(position_data: Dict[str, Any]) -> bool:
             "exit_time",
             "closePrice",
             "pnl",
-            "close_order_id",
+            "close_order_ids",
         ]
 
         # Check for symbol
@@ -148,7 +148,7 @@ def update_order_status(position_data: Dict[str, Any]) -> bool:
                 "exit_time": position_data["exit_time"],
                 "closePrice": position_data["closePrice"],
                 "pnl": position_data["pnl"],
-                "close_order_id": position_data.get("close_order_id", []),
+                "close_order_ids": position_data.get("close_order_ids", []),
             }
         }
 

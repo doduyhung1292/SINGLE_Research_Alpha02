@@ -105,8 +105,8 @@ def process_simulation_orders(orders_batch: List, positions_batch: List[Dict[str
                 position_data["exit_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 
                 # Tạo close_order_ids nếu chưa có
-                if "close_order_id" not in position_data:
-                    position_data["close_order_id"] = [
+                if "close_order_ids" not in position_data:
+                    position_data["close_order_ids"] = [
                         f"sim_close_{position_data['symbol']}_{int(time.time())}"
                     ]
                 
@@ -555,7 +555,7 @@ def process_missed_position(position_id: str, map_data: Dict[str, Any], order_ty
                         "exit_time": position_data.get("exit_time", datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
                         "closePrice": position_data.get("closePrice"),
                         "pnl": position_data.get("pnl", 0),
-                        "close_order_id": position_data.get("close_order_ids", []),
+                        "close_order_ids": position_data.get("close_order_ids", []),
                     }
                 },
             )
