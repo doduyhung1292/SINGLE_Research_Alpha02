@@ -93,7 +93,7 @@ def process_simulation_orders(orders_batch: List, positions_batch: List[Dict[str
                 position_data = convert_numpy_to_python(position_data)
                 
                 # Lưu vị thế mới vào database
-                save_result = save_order_to_db(position_data)
+                save_result = save_position_to_db(position_data)
                 if save_result:
                     logger.info(f"Simulation: Successfully opened position for {position_data['symbol']}")
                 else:
@@ -359,7 +359,7 @@ def process_open_position(position_id: str, map_data: Dict[str, Any], client_ord
         # Lưu vào database
         try:
             # Lưu thông tin vị thế mới vào database
-            save_result = save_order_to_db(position_data)
+            save_result = save_position_to_db(position_data)
             if save_result:
                 logger.info(f"Successfully saved new position {position_id} for {symbol} to database, ID: {save_result}")
                 # Thêm thông báo Telegram
@@ -588,7 +588,7 @@ def process_missed_position(position_id: str, map_data: Dict[str, Any], order_ty
 
         # Lưu vào database
         try:
-            save_result = save_order_to_db(position_data)
+            save_result = save_position_to_db(position_data)
             if save_result:
                 logger.info(f"Successfully saved missed new position {position_id} for {symbol} to database, ID: {save_result}")
                 # Thêm thông báo Telegram
