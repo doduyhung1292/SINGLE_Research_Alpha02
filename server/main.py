@@ -1721,7 +1721,7 @@ if __name__ == "__main__":
 
     if api_credentials_valid:
         # Only schedule data collection if credentials are valid
-        scheduler.add_job(crawl_and_store_data, 'interval', minutes=5, next_run_time=datetime.now(timezone.utc))
+        scheduler.add_job(crawl_equity_data_multi_account, 'interval', minutes=5, next_run_time=datetime.now(timezone.utc))
         # Removed immediate execution
         logging.info("Scheduled data collection jobs successfully")
     else:
