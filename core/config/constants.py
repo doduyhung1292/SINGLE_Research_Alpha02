@@ -31,7 +31,7 @@ DEFAULT_SYMBOLS = [
 CONFIG = DEFAULT_CONFIG.copy()
 
 # Simulation mode constants
-TRADING_MODE = "simulation"  # or "live" or "simulation"
+TRADING_MODE = "live"  # or "live" or "simulation"
 SIMULATION_INITIAL_EQUITY = 1000.0
 TRADING_FEE = 0.0005  # 0.05%
 SLIPPAGE = 0.0002  # 0.02%
