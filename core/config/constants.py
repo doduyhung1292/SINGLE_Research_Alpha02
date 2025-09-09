@@ -4,7 +4,7 @@ from datetime import datetime
 DEFAULT_CONFIG = {
     "window": 500,  # Bollinger Band window period
     "bb_entry_multiplier": 2.0,  # Multiplier for entry Bollinger Bands
-    "timeframe": "4h",  # Default timeframe
+    "timeframe": "5m",  # Default timeframe
     "limit": 900,  # Number of candles to fetch
     "position_size_pct": 0.1,  # Position size as percentage of equity (0.01 = 1%)
     "max_concurrent_positions": 3,  # Maximum number of concurrent positions

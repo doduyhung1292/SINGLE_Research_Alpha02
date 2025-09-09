@@ -51,7 +51,7 @@ def delay(series, period):
     return delayed
 
 
-def calculate_new_spread(Close, Open):
+def calculate_new_spread(Close, Open, High, Low, Volume):
     """
     Tính spread theo công thức mới:
     Close - Open
@@ -59,6 +59,9 @@ def calculate_new_spread(Close, Open):
 
     Close = np.array(Close, dtype=float)
     Open = np.array(Open, dtype=float)
+    High = np.array(High, dtype=float) if High is not None else None
+    Low = np.array(Low, dtype=float) if Low is not None else None      
+    Volume = np.array(Volume, dtype=float) if Volume is not None else None
 
-    alpha = Close - Open
+    alpha = Open*0.85 + High*0.15
     return alpha.tolist()

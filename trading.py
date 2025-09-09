@@ -92,11 +92,17 @@ def process_symbol(
         # Extract close prices and timestamps
         close_prices = []
         open_prices = []
+        high_prices = []
+        low_prices = []
+        volume_data = []
         timestamps = []
         for item in data:
             try:
                 close_prices.append(float(item["close"]))
                 open_prices.append(float(item["open"]))
+                high_prices.append(float(item["high"]))
+                low_prices.append(float(item["low"]))
+                volume_data.append(float(item["volume"]))
                 timestamps.append(int(item["time"]))
             except (IndexError, ValueError) as e:
                 logger.warning(f"Error parsing data for {symbol}: {e}")
@@ -134,6 +140,9 @@ def process_symbol(
         # Create pandas Series with timestamps as index
         close_series = pd.Series(close_prices, index=timestamps)
         open_series = pd.Series(open_prices, index=timestamps)
+        high_series = pd.Series(high_prices, index=timestamps)
+        low_series = pd.Series(low_prices, index=timestamps)
+        volume_series = pd.Series(volume_data, index=timestamps)
 
         # Find common timestamps
         common_index = close_series.index
@@ -151,7 +160,7 @@ def process_symbol(
 
 
         # Calculate the spread (logarithmic) using aligned series
-        spread = calculate_new_spread(Close = close_series.values, Open = open_series.values)
+        spread = calculate_new_spread(Close = close_series.values, Open = open_series.values, High = high_series.values, Low = low_series.values, Volume = volume_series.values)
 
         # Log data reduction statistics
         if len(spread) < original_data_length:

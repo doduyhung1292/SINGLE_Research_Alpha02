@@ -292,6 +292,9 @@ def check_open_position(
         # Extract close prices
         close_prices = [float(candle["close"]) for candle in symbol_data[symbol]]
         open_prices = [float(candle["open"]) for candle in symbol_data[symbol]]
+        high_prices = [float(candle["high"]) for candle in symbol_data[symbol]]
+        low_prices = [float(candle["low"]) for candle in symbol_data[symbol]]
+        volume_data = [float(candle["volume"]) for candle in symbol_data[symbol]]
 
         # Get latest price for PnL calculation
         latest_price_data = get_latest_price_from_ohlcv(symbol, symbol_data)
@@ -300,15 +303,20 @@ def check_open_position(
         if isinstance(latest_price_data, dict) and "close" in latest_price_data:
             close_price = float(latest_price_data["close"])
             open_price = float(latest_price_data["open"])
+            high_price = float(latest_price_data["high"])
+            low_price = float(latest_price_data["low"])
+            volume = float(latest_price_data["volume"])
         else:
             close_price = (
                 float(latest_price_data) if latest_price_data else close_prices[-1]
             )
             open_price = (float(latest_price_data) if latest_price_data else open_prices[-1])
-
+            high_price = (float(latest_price_data) if latest_price_data else high_prices[-1])
+            low_price = (float(latest_price_data) if latest_price_data else low_prices[-1])
+            volume = (float(latest_price_data) if latest_price_data else volume_data[-1])
 
         # Calculate spread using historical prices
-        spreads = calculate_new_spread(close_price, open_price)
+        spreads = calculate_new_spread(close_price, open_price, high_price, low_price, volume)
         if not spreads or len(spreads) == 0:
             logger.error(f"Failed to calculate spread for {symbol}")
             return False, None
